@@ -4,6 +4,7 @@ import httpx
 import pytest
 import respx
 
+from contracts.errors import AuthRequired
 from services.spotify.client import SpotifyClient, SpotifyError
 
 HOST = "api.spotify.com"
@@ -106,6 +107,16 @@ def test_401_refreshes_token_once(client):
     client.artist_genres("ar")
     assert client.auth.refreshes == 1
     assert route.calls.last.request.headers["Authorization"] == "Bearer t2"
+
+
+@respx.mock
+def test_second_401_after_refresh_raises_auth_required(client):
+    respx.get(host=HOST, path="/v1/artists/ar").mock(side_effect=[
+        httpx.Response(401), httpx.Response(401),
+    ])
+    with pytest.raises(AuthRequired):
+        client.artist_genres("ar")
+    assert client.auth.refreshes == 1
 
 
 @respx.mock

@@ -7,7 +7,7 @@ from typing import Any, Callable, Protocol
 
 import httpx
 
-from contracts.errors import ExternalServiceError
+from contracts.errors import AuthRequired, ExternalServiceError
 from contracts.models import Artist, PlaylistSummary, Track
 
 API = "https://api.spotify.com/v1"
@@ -69,10 +69,12 @@ class SpotifyClient:
                 response = self.http.request(method, url, headers=headers, timeout=20, **kwargs)
             except httpx.HTTPError as err:
                 raise SpotifyError(f"Sem conexão com o Spotify: {err}") from err
-            if response.status_code == 401 and not refreshed:
-                self.auth.refresh()
-                refreshed = True
-                continue
+            if response.status_code == 401:
+                if not refreshed:
+                    self.auth.refresh()
+                    refreshed = True
+                    continue
+                raise AuthRequired("Sessão do Spotify expirou. Faça login de novo.")
             if response.status_code == 429:
                 wait = _parse_retry_after(response.headers.get("Retry-After"), float(2**attempt))
                 if wait > 30:
