@@ -1,0 +1,2 @@
+#!/bin/sh
+uv run pytest -q || { echo "Gate tests falharam. Commit bloqueado."; exit 1; }
