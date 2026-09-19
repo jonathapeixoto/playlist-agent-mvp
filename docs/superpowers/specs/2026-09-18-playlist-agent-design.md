@@ -1,6 +1,6 @@
 # Spec: Playlist Agent
 
-Data: 2026-09-18 · Status: aguardando revisão do Jone
+Data: 2026-09-18 · Status: implementado (verificação real pendente)
 
 ## Contexto
 
@@ -88,3 +88,11 @@ Log JSONL em `data/traces.jsonl` por interação, com:
 - `uv run pytest` verde.
 - Evals rodados, scores registrados.
 - Teste manual real: login Spotify; reorganizar uma playlist de teste por BPM (checar ordem no app do Spotify); dividir por gênero; criar playlist "prédio" com pelo menos 5 andares validados; reordenar in place e usar Desfazer, conferindo que a ordem original voltou.
+
+## Resultados medidos
+
+- Gate tests: 166 testes, 1.34s.
+- Eval de intenção: 100% (25/25, limiar 90%). Relatório: data/evals/intent-20260919-010243.json
+- Eval de temas: pendente (precisa de login no Spotify: `uv run python -m services.agent.evals.run_theme`).
+- Ponta a ponta: pendente (roteiro no plano, Task 16 Step 4).
+- Cobertura média de BPM: pendente (medida no teste ponta a ponta).
