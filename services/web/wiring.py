@@ -12,6 +12,7 @@ from services.agent.agent import Agent
 from services.agent.theme_resolver import ThemeResolver
 from services.agent.trace import Tracer
 from services.agent.undo import UndoStore
+from services.enrichment.alternates import AlternateFinder
 from services.enrichment.cache import EnrichmentCache
 from services.enrichment.enricher import Enricher
 from services.enrichment.genres import GenreResolver, LastFmClient
@@ -40,7 +41,12 @@ def build_deps(settings: Settings, claude_ok: bool) -> AppDeps:
     spotify = SpotifyClient(auth, http)
     cache = EnrichmentCache(data / "cache.sqlite")
     lastfm = LastFmClient(settings.lastfm_api_key, http) if settings.lastfm_api_key else None
-    enricher = Enricher(ReccoBeatsClient(http), GenreResolver(spotify.artist_genres, lastfm, cache), cache)
+    enricher = Enricher(
+        ReccoBeatsClient(http),
+        GenreResolver(spotify.artist_genres, lastfm, cache),
+        cache,
+        AlternateFinder(spotify.search_tracks),
+    )
     trace_path = data / "traces.jsonl"
     tracer = Tracer(trace_path)
     # Sem cwd: o runner usa uma pasta temporária fora do projeto (ver services/llm/runner.py).
