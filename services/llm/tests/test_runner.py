@@ -77,3 +77,9 @@ def test_available_runs_version(tmp_path):
 def test_available_false_when_missing(tmp_path, monkeypatch):
     monkeypatch.setattr("services.llm.runner.shutil.which", lambda name: None)
     assert not ClaudeRunner(cwd=tmp_path).available()
+
+
+def test_os_error_becomes_llm_error(tmp_path):
+    runner, _ = _runner(PermissionError("negado"), tmp_path)
+    with pytest.raises(LLMError):
+        runner.run("s", "p", {})

@@ -73,6 +73,8 @@ class ClaudeRunner:
             )
         except subprocess.TimeoutExpired as err:
             raise LLMError(f"O Claude Code não respondeu em {self.timeout:.0f}s.") from err
+        except OSError as err:
+            raise LLMError(f"Não foi possível executar o Claude Code: {err}") from err
         latency = self.clock() - start
         if proc.returncode != 0:
             raise LLMError(f"Claude Code saiu com código {proc.returncode}: {(proc.stderr or '')[:300]}")
