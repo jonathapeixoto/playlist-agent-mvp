@@ -39,6 +39,16 @@ def _clean(text: str, limit: int) -> str:
     return " ".join(text.split())[:limit]
 
 
+def _parse_retry_after(value: str | None, default: float) -> float:
+    """Alguns servidores mandam Retry-After como data HTTP em vez de segundos; nesse caso usa o default."""
+    if value is None:
+        return default
+    try:
+        return float(value)
+    except ValueError:
+        return default
+
+
 class SpotifyClient:
     def __init__(
         self, auth: _Auth, http: httpx.Client, sleep: Callable[[float], None] = time.sleep, max_retries: int = 3
@@ -63,11 +73,18 @@ class SpotifyClient:
                 self.auth.refresh()
                 refreshed = True
                 continue
-            retryable = response.status_code == 429 or (
-                response.status_code >= 500 and method in ("GET", "PUT")
-            )
-            if retryable and attempt < self.max_retries:
-                wait = float(response.headers.get("Retry-After", 2**attempt))
+            if response.status_code == 429:
+                wait = _parse_retry_after(response.headers.get("Retry-After"), float(2**attempt))
+                if wait > 30:
+                    raise SpotifyError(f"Spotify pediu para esperar {wait:.0f}s; tente de novo mais tarde.")
+                if attempt < self.max_retries:
+                    self.sleep(wait)
+                    attempt += 1
+                    continue
+                break
+            retryable_5xx = response.status_code >= 500 and method in ("GET", "PUT")
+            if retryable_5xx and attempt < self.max_retries:
+                wait = _parse_retry_after(response.headers.get("Retry-After"), float(2**attempt))
                 self.sleep(min(wait, 30.0))
                 attempt += 1
                 continue

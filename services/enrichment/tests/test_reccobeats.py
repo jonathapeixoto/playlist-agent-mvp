@@ -46,6 +46,18 @@ def test_retries_429_then_marks_chunk_failed_on_persistent_error():
 
 
 @respx.mock
+def test_retry_after_http_date_falls_back_to_exponential_default():
+    sleeps = []
+    respx.get(host=HOST, path="/v1/audio-features").mock(side_effect=[
+        httpx.Response(429, headers={"Retry-After": "Mon, 01 Jan 2030 00:00:00 GMT"}),
+        httpx.Response(200, json={"content": [_item("a", 100)]}),
+    ])
+    result = ReccoBeatsClient(httpx.Client(), sleep=sleeps.append).audio_features(["a"])
+    assert result.found["a"].tempo == 100
+    assert sleeps == [1.0]
+
+
+@respx.mock
 def test_network_error_marks_chunk_failed():
     respx.get(host=HOST, path="/v1/audio-features").mock(side_effect=httpx.ConnectError("offline"))
     result = ReccoBeatsClient(httpx.Client(), sleep=lambda s: None).audio_features(["a"])

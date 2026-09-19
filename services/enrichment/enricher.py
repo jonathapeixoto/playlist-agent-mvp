@@ -15,6 +15,7 @@ class Enricher:
         self.cache = cache
 
     def enrich(self, tracks: list[Track]) -> list[EnrichedTrack]:
+        self.genres.start_batch()
         ids = list(dict.fromkeys(t.id for t in tracks))
         features = self.cache.get_audio(ids)
         to_fetch = [i for i in ids if i not in features]

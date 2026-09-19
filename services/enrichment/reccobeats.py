@@ -19,6 +19,16 @@ class FeaturesResult(BaseModel):
     failed: list[str]
 
 
+def _parse_retry_after(value: str | None, default: float) -> float:
+    """Alguns servidores mandam Retry-After como data HTTP em vez de segundos; nesse caso usa o default."""
+    if value is None:
+        return default
+    try:
+        return float(value)
+    except ValueError:
+        return default
+
+
 class ReccoBeatsClient:
     def __init__(self, http: httpx.Client, sleep: Callable[[float], None] = time.sleep, max_retries: int = 3) -> None:
         self.http = http
@@ -35,7 +45,7 @@ class ReccoBeatsClient:
                 return response.json().get("content", [])
             if attempt < self.max_retries:
                 retry_after = response.headers.get("Retry-After") if response is not None else None
-                self.sleep(min(float(retry_after or 2**attempt), 30.0))
+                self.sleep(min(_parse_retry_after(retry_after, float(2**attempt)), 30.0))
         return None
 
     def audio_features(self, spotify_ids: list[str]) -> FeaturesResult:

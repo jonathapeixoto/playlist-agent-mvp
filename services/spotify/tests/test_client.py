@@ -117,6 +117,24 @@ def test_error_after_retries_raises_spotify_error(client):
 
 
 @respx.mock
+def test_retry_after_http_date_falls_back_to_exponential_default(client):
+    respx.get(host=HOST, path="/v1/artists/ar").mock(side_effect=[
+        httpx.Response(429, headers={"Retry-After": "Mon, 01 Jan 2030 00:00:00 GMT"}),
+        httpx.Response(200, json={"genres": ["rock"]}),
+    ])
+    assert client.artist_genres("ar") == ["rock"]
+    assert client.sleeps == [1.0]
+
+
+@respx.mock
+def test_429_retry_after_over_30s_raises_without_sleeping(client):
+    respx.get(host=HOST, path="/v1/artists/ar").mock(return_value=httpx.Response(429, headers={"Retry-After": "120"}))
+    with pytest.raises(SpotifyError):
+        client.artist_genres("ar")
+    assert client.sleeps == []
+
+
+@respx.mock
 def test_post_5xx_is_not_retried_and_raises_immediately(client):
     route = respx.post(host=HOST, path="/v1/me/playlists").mock(return_value=httpx.Response(503))
     with pytest.raises(SpotifyError):

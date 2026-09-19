@@ -52,27 +52,51 @@ class LastFmClient:
 
 
 class GenreResolver:
+    """Circuito por lote: uma fonte que falha uma vez fica marcada 'down' até o próximo start_batch(),
+    para não fazer o lote inteiro esperar timeout de novo em cada artista."""
+
     def __init__(
         self, spotify_genres: Callable[[str], list[str]], lastfm: LastFmClient | None, cache: EnrichmentCache
     ) -> None:
         self.spotify_genres = spotify_genres
         self.lastfm = lastfm
         self.cache = cache
+        self._spotify_down = False
+        self._lastfm_down = False
+
+    def start_batch(self) -> None:
+        self._spotify_down = False
+        self._lastfm_down = False
 
     def genres_for(self, artist: Artist) -> list[str]:
         cached = self.cache.get_genres(artist.id)
         if cached is not None:
             return cached
+        genres: list[str] = []
         source = "spotify"
-        try:
-            genres = self.spotify_genres(artist.id) if artist.id else []
-        except ExternalServiceError:
-            genres = []
+        blocked = False
+        if artist.id:
+            if self._spotify_down:
+                blocked = True
+            else:
+                try:
+                    genres = self.spotify_genres(artist.id)
+                except ExternalServiceError:
+                    self._spotify_down = True
+                    blocked = True
         if not genres and self.lastfm is not None:
             source = "lastfm"
-            try:
-                genres = self.lastfm.artist_tags(artist.name)
-            except ExternalServiceError:
-                genres = []
+            if self._lastfm_down:
+                blocked = True
+            else:
+                try:
+                    genres = self.lastfm.artist_tags(artist.name)
+                except ExternalServiceError:
+                    self._lastfm_down = True
+                    blocked = True
+        if not genres and blocked:
+            # Vazio por causa de falha/circuito aberto, não por resposta genuína: não cacheia,
+            # para o próximo lote poder tentar de novo em vez de ficar preso a um "sem gênero" falso.
+            return genres
         self.cache.put_genres(artist.id, genres, source)
         return genres

@@ -65,3 +65,53 @@ def test_resolver_propagates_auth_required(tmp_path):
 
     with pytest.raises(AuthRequired):
         GenreResolver(needs_login, None, EnrichmentCache(tmp_path / "c.sqlite")).genres_for(Artist(id="a", name="A"))
+
+
+# F5: circuito por lote não pode travar o resto do lote nem poluir o cache com falha.
+
+def test_circuit_breaker_skips_spotify_for_rest_of_batch_after_one_failure(tmp_path):
+    calls = []
+
+    def failing(aid):
+        calls.append(aid)
+        raise ExternalServiceError("503")
+
+    resolver = GenreResolver(failing, FakeLastFm(["mpb"]), EnrichmentCache(tmp_path / "c.sqlite"))
+    resolver.start_batch()
+    assert resolver.genres_for(Artist(id="a1", name="A")) == ["mpb"]
+    assert resolver.genres_for(Artist(id="a2", name="B")) == ["mpb"]
+    assert calls == ["a1"]
+
+
+def test_errored_lookup_is_not_cached_and_retries_in_next_batch(tmp_path):
+    calls = []
+
+    def failing(aid):
+        calls.append(aid)
+        raise ExternalServiceError("503")
+
+    cache = EnrichmentCache(tmp_path / "c.sqlite")
+    resolver = GenreResolver(failing, None, cache)
+    resolver.start_batch()
+    assert resolver.genres_for(Artist(id="a1", name="A")) == []
+    assert cache.get_genres("a1") is None
+    resolver.start_batch()
+    assert resolver.genres_for(Artist(id="a1", name="A")) == []
+    assert calls == ["a1", "a1"]
+
+
+def test_genuine_empty_answer_is_still_cached(tmp_path):
+    calls = []
+
+    def empty(aid):
+        calls.append(aid)
+        return []
+
+    cache = EnrichmentCache(tmp_path / "c.sqlite")
+    resolver = GenreResolver(empty, FakeLastFm([]), cache)
+    resolver.start_batch()
+    assert resolver.genres_for(Artist(id="a1", name="A")) == []
+    assert cache.get_genres("a1") == []
+    resolver.start_batch()
+    assert resolver.genres_for(Artist(id="a1", name="A")) == []
+    assert calls == ["a1"]

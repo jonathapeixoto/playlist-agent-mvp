@@ -18,6 +18,9 @@ class FakeRecco:
 
 
 class FakeGenres:
+    def start_batch(self):
+        pass
+
     def genres_for(self, artist):
         return ["rock"] if artist.id == "ar" else []
 
