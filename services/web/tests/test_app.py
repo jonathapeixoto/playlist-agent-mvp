@@ -103,3 +103,9 @@ def test_stats_and_reset(ctx):
     client, _ = ctx
     assert client.get("/api/stats").json()["events"] == 0
     assert client.post("/api/reset").json() == {"ok": True}
+
+
+def test_untrusted_host_header_is_rejected(ctx):
+    client, _ = ctx
+    assert client.get("/api/status", headers={"Host": "evil.example"}).status_code == 400
+    assert client.get("/api/status").status_code == 200

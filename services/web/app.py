@@ -11,6 +11,7 @@ from fastapi import FastAPI, Query, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from contracts.errors import AuthRequired, ExternalServiceError
 from contracts.models import AgentReply, ApplyMode
@@ -40,6 +41,8 @@ class UndoIn(BaseModel):
 
 def create_app(deps: AppDeps) -> FastAPI:
     app = FastAPI(title="Playlist Agent")
+    # Protege contra DNS rebinding: só aceita Host apontando para este processo local.
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
     app.state.session = Session()
     pending_logins: dict[str, str] = {}
     lock = threading.Lock()
