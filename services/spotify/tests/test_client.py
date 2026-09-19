@@ -117,6 +117,27 @@ def test_error_after_retries_raises_spotify_error(client):
 
 
 @respx.mock
+def test_post_5xx_is_not_retried_and_raises_immediately(client):
+    route = respx.post(host=HOST, path="/v1/me/playlists").mock(return_value=httpx.Response(503))
+    with pytest.raises(SpotifyError):
+        client.create_playlist("x", "y")
+    assert route.call_count == 1
+    assert client.sleeps == []
+
+
+@respx.mock
+def test_post_429_is_still_retried(client):
+    route = respx.post(host=HOST, path="/v1/me/playlists").mock(side_effect=[
+        httpx.Response(429, headers={"Retry-After": "1"}),
+        httpx.Response(201, json={"id": "new", "external_urls": {"spotify": "https://open.spotify.com/playlist/new"}}),
+    ])
+    pid, _ = client.create_playlist("x", "y")
+    assert pid == "new"
+    assert route.call_count == 2
+    assert client.sleeps == [1.0]
+
+
+@respx.mock
 def test_create_playlist_truncates_and_strips_newlines(client):
     route = respx.post(host=HOST, path="/v1/me/playlists").mock(return_value=httpx.Response(
         201, json={"id": "new", "external_urls": {"spotify": "https://open.spotify.com/playlist/new"}}

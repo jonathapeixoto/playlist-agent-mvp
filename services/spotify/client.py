@@ -63,7 +63,9 @@ class SpotifyClient:
                 self.auth.refresh()
                 refreshed = True
                 continue
-            retryable = response.status_code == 429 or response.status_code >= 500
+            retryable = response.status_code == 429 or (
+                response.status_code >= 500 and method in ("GET", "PUT")
+            )
             if retryable and attempt < self.max_retries:
                 wait = float(response.headers.get("Retry-After", 2**attempt))
                 self.sleep(min(wait, 30.0))
