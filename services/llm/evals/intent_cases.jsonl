@@ -1,0 +1,25 @@
+{"id": 1, "message": "organiza minha playlist Treino por BPM", "action": "reorganize", "playlist": "Treino", "kinds": ["bpm"], "question": false}
+{"id": 2, "message": "quero a Treino começando devagar e acelerando", "action": "reorganize", "playlist": "Treino", "kinds": ["bpm"], "question": false}
+{"id": 3, "message": "separa a Festa 2025 por gênero", "action": "reorganize", "playlist": "Festa 2025", "kinds": ["genre"], "question": false}
+{"id": 4, "message": "divide a Churrasco em várias playlists por estilo", "action": "reorganize", "playlist": "Churrasco", "kinds": ["genre"], "question": false}
+{"id": 5, "message": "faz uma playlist prédio, com músicas tipo primeiro andar, segundo andar", "action": "discover", "kinds": ["theme"], "question": false}
+{"id": 6, "message": "cria uma playlist com músicas que tenham os dias da semana no nome", "action": "discover", "kinds": ["theme"], "question": false}
+{"id": 7, "message": "quero uma playlist com cores no título das músicas", "action": "discover", "kinds": ["theme"], "question": false}
+{"id": 8, "message": "organiza a Estudo", "action": "reorganize", "playlist": "Estudo"}
+{"id": 9, "message": "oi, tudo bem?", "action": "chat"}
+{"id": 10, "message": "o que você consegue fazer?", "action": "chat"}
+{"id": 11, "message": "ordena a Rock Nacional do mais rápido pro mais lento", "action": "reorganize", "playlist": "Rock Nacional", "kinds": ["bpm"], "question": false}
+{"id": 12, "message": "coloca a Relax em ordem de bpm decrescente", "action": "reorganize", "playlist": "Relax", "kinds": ["bpm"], "question": false}
+{"id": 13, "message": "quero que a playlist de treino tenha um pico de energia no meio", "action": "reorganize", "playlist": "Treino", "kinds": ["bpm"], "question": false}
+{"id": 14, "message": "agrupa a Festa 2025 por subgênero", "action": "reorganize", "playlist": "Festa 2025", "kinds": ["genre"], "question": false}
+{"id": 15, "message": "organiza minha playlist de academia por batidas por minuto", "action": "reorganize", "kinds": ["bpm"]}
+{"id": 16, "message": "monta uma playlist contando de um a dez", "action": "discover", "kinds": ["theme"], "question": false}
+{"id": 17, "message": "playlist com músicas que tenham as estações do ano no título", "action": "discover", "kinds": ["theme"], "question": false}
+{"id": 18, "message": "cria uma playlist sobre o sistema solar, com um planeta no nome de cada música", "action": "discover", "kinds": ["theme"], "question": false}
+{"id": 19, "message": "separa a Churrasco: sertanejo de um lado, pagode do outro", "action": "reorganize", "playlist": "Churrasco", "kinds": ["genre"], "question": false}
+{"id": 20, "message": "deixa a Estudo na ordem das mais calmas pras mais agitadas", "action": "reorganize", "playlist": "Estudo", "kinds": ["bpm"], "question": false}
+{"id": 21, "message": "faz uma playlist", "action": "discover", "question": true}
+{"id": 22, "message": "valeu, ficou ótimo!", "action": "chat"}
+{"id": 23, "message": "arruma a Treino do jeito que você achar melhor", "action": "reorganize", "playlist": "Treino", "question": false}
+{"id": 24, "message": "quero uma playlist que conte um dia inteiro: manhã, tarde e noite no nome das músicas", "action": "discover", "kinds": ["theme"], "question": false}
+{"id": 25, "message": "organiza a Festa 2025 por gênero musical e depois por bpm", "action": "reorganize", "playlist": "Festa 2025", "kinds": ["genre", "bpm"], "question": false}
