@@ -1,5 +1,6 @@
 import pytest
 
+from contracts.errors import ExternalServiceError
 from contracts.models import (
     ApplyMode, Artist, BpmMode, ConversationState, EnrichedTrack, GenreLevel, Intent, PlaylistSummary,
     StrategyChoice, StrategyKind, ThemePlan, ThemeSlot, Track,
@@ -38,6 +39,8 @@ class FakeSpotify:
         self.tracks = {"src": [_t("b"), _t("a"), _t("c")]}
         self.created = []
         self.replaced = []
+        self.fail_replace_once = False
+        self.fail_create_index = None
 
     def my_playlists(self):
         return self.playlists
@@ -46,18 +49,26 @@ class FakeSpotify:
         return list(self.tracks[pid])
 
     def create_playlist(self, name, description):
+        if self.fail_create_index is not None and len(self.created) == self.fail_create_index:
+            raise ExternalServiceError("Spotify fora do ar")
         pid = f"new{len(self.created)}"
         self.created.append((pid, name))
         return pid, f"https://open.spotify.com/playlist/{pid}"
 
     def replace_items(self, pid, uris):
+        if self.fail_replace_once:
+            self.fail_replace_once = False
+            raise ExternalServiceError("Spotify fora do ar")
         self.replaced.append((pid, list(uris)))
         self.tracks[pid] = [_t(u.rsplit(":", 1)[-1]) for u in uris]
 
 
 class FakeEnricher:
-    TEMPO = {"a": 100, "b": 120, "c": 140, "x": 90}
-    GENRES = {"a": ["rock"], "b": ["rock"], "c": ["pagode"], "x": []}
+    TEMPO = {"a": 100, "b": 120, "c": 140, "x": 90, "d": 110, "e": 130, "f": 150}
+    GENRES = {
+        "a": ["rock"], "b": ["rock"], "c": ["pagode"], "x": [],
+        "d": ["rock"], "e": ["pagode"], "f": ["pagode"],
+    }
 
     def __init__(self):
         self.calls = []
@@ -232,3 +243,96 @@ def test_discover_without_theme_option_asks_for_theme(world):
     agent, _ = world["make"]([Intent(action="discover", reply="ok", options=[BPM_ASC])])
     reply = agent.handle_message(Session(), "faz uma playlist")
     assert reply.state is ConversationState.UNDERSTAND and "tema" in reply.message
+
+
+# F1: replace-in-place não pode apagar itens que o app não enxerga nem gravar em cima
+# de uma playlist que mudou desde a prévia.
+
+def test_choose_marks_plan_non_replaceable_when_playlist_has_unreadable_items(world):
+    world["spotify"].playlists[0] = PlaylistSummary(id="src", name="Treino", total=4, owner_id="me")
+    agent, _ = world["make"]([_reorganize()])
+    s = Session()
+    agent.handle_message(s, "x")
+    reply = agent.choose(s, 0)
+    assert reply.plan.can_replace_in_place is False
+    assert "não consegue ler" in reply.message
+    with pytest.raises(AgentError):
+        agent.apply(s, ApplyMode.REPLACE)
+    assert world["spotify"].created == [] and world["spotify"].replaced == []
+
+
+def test_apply_replace_refused_when_playlist_changed_since_preview(world):
+    agent, _ = world["make"]([_reorganize()])
+    s = Session()
+    agent.handle_message(s, "x")
+    agent.choose(s, 0)
+    world["spotify"].tracks["src"] = [_t("z"), _t("a"), _t("c")]
+    with pytest.raises(AgentError):
+        agent.apply(s, ApplyMode.REPLACE)
+    assert world["spotify"].created == [] and world["spotify"].replaced == []
+
+
+def test_apply_replace_still_works_when_nothing_changed(world):
+    agent, _ = world["make"]([_reorganize()])
+    s = Session()
+    agent.handle_message(s, "x")
+    agent.choose(s, 0)
+    reply = agent.apply(s, ApplyMode.REPLACE)
+    assert reply.state is ConversationState.APPLIED
+    assert [t.id for t in world["spotify"].tracks["src"]] == ["a", "b", "c"]
+
+
+# F2: falha no meio da gravação do replace-in-place não pode deixar o usuário sem o undo_id.
+
+def test_apply_replace_failure_still_returns_undo_id_for_undo(world):
+    agent, _ = world["make"]([_reorganize()])
+    s = Session()
+    agent.handle_message(s, "x")
+    agent.choose(s, 0)
+    world["spotify"].fail_replace_once = True
+    reply = agent.apply(s, ApplyMode.REPLACE)
+    assert reply.state is ConversationState.APPLIED
+    assert reply.result.undo_id is not None
+    assert "Desfazer" in reply.message
+    agent.undo(s, reply.result.undo_id)
+    assert [t.id for t in world["spotify"].tracks["src"]] == ["b", "a", "c"]
+
+
+# F3: falha no meio de "criar novas" não pode permitir criar duplicadas numa nova tentativa.
+
+def test_apply_new_partial_failure_blocks_retry_and_names_created(world):
+    world["spotify"].playlists[0] = PlaylistSummary(id="src", name="Treino", total=6, owner_id="me")
+    world["spotify"].tracks["src"] = [_t("a"), _t("b"), _t("d"), _t("c"), _t("e"), _t("f")]
+    agent, _ = world["make"]([_reorganize(options=[SPLIT])])
+    s = Session()
+    agent.handle_message(s, "x")
+    agent.choose(s, 0)
+    world["spotify"].fail_create_index = 1
+    with pytest.raises(AgentError) as exc:
+        agent.apply(s, ApplyMode.NEW)
+    assert "Já criei" in str(exc.value)
+    assert len(world["spotify"].created) == 1
+    assert s.state is ConversationState.APPLIED
+    assert s.plan is None
+    with pytest.raises(AgentError):
+        agent.apply(s, ApplyMode.NEW)
+    assert len(world["spotify"].created) == 1
+
+
+def test_apply_new_failure_before_any_create_keeps_preview_for_retry(world):
+    world["spotify"].playlists[0] = PlaylistSummary(id="src", name="Treino", total=6, owner_id="me")
+    world["spotify"].tracks["src"] = [_t("a"), _t("b"), _t("d"), _t("c"), _t("e"), _t("f")]
+    agent, _ = world["make"]([_reorganize(options=[SPLIT])])
+    s = Session()
+    agent.handle_message(s, "x")
+    agent.choose(s, 0)
+    world["spotify"].fail_create_index = 0
+    with pytest.raises(ExternalServiceError):
+        agent.apply(s, ApplyMode.NEW)
+    assert s.state is ConversationState.PREVIEW
+    assert s.plan is not None
+    assert world["spotify"].created == []
+    world["spotify"].fail_create_index = None
+    reply = agent.apply(s, ApplyMode.NEW)
+    assert reply.state is ConversationState.APPLIED
+    assert len(world["spotify"].created) == 2

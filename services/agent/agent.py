@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
+from contracts.errors import ExternalServiceError
 from contracts.models import (
     AgentReply, ApplyMode, ApplyResult, ConversationState, IntentAction, PlaylistPlan, PlaylistSummary,
     StrategyChoice, StrategyKind,
@@ -125,6 +127,7 @@ class Agent:
         if s.state is not State.PROPOSE or not 0 <= index < len(s.options):
             raise AgentError("Escolha uma das opções propostas.")
         choice = s.options[index]
+        incomplete = False
         if choice.kind is StrategyKind.THEME:
             plan = self._plan_theme(choice)
         else:
@@ -134,6 +137,9 @@ class Agent:
             if not tracks:
                 raise AgentError(f'A playlist "{s.source.name}" está vazia.')
             plan = plan_reorganize(choice, s.source, self.enricher.enrich(tracks))
+            if len(tracks) != s.source.total:
+                incomplete = True
+                plan = plan.model_copy(update={"source_playlist_id": None})
         s.history.append(("usuário", f"Escolhi: {choice.label}"))
         s.plan = plan
         self.tracer(
@@ -141,7 +147,13 @@ class Agent:
             tracks=sum(len(p.tracks) for p in plan.playlists),
             bpm_coverage=round(plan.bpm_coverage, 3), genre_coverage=round(plan.genre_coverage, 3),
         )
-        return self._say(s, describe_plan(plan), State.PREVIEW, plan=plan)
+        message = describe_plan(plan)
+        if incomplete:
+            message += (
+                " A playlist tem itens que o app não consegue ler (arquivos locais ou podcasts),"
+                " então só dá para criar uma playlist nova."
+            )
+        return self._say(s, message, State.PREVIEW, plan=plan)
 
     def apply(self, s: Session, mode: ApplyMode) -> AgentReply:
         if s.state is not State.PREVIEW or s.plan is None:
@@ -151,22 +163,57 @@ class Agent:
             if not plan.can_replace_in_place or plan.source_playlist_id is None:
                 raise AgentError("Este plano só pode criar playlists novas.")
             pid = plan.source_playlist_id
-            undo_id = self.undo_store.save(pid, [t.uri for t in self.spotify.playlist_tracks(pid)])
-            self.spotify.replace_items(pid, [t.track.uri for t in plan.playlists[0].tracks])
-            result = ApplyResult(
-                mode=mode, playlist_ids=[pid], urls=[f"https://open.spotify.com/playlist/{pid}"], undo_id=undo_id
-            )
+            current = self.spotify.playlist_tracks(pid)
+            fresh = next((p for p in self.spotify.my_playlists() if p.id == pid), None)
+            planned_uris = [t.track.uri for t in plan.playlists[0].tracks]
+            if (
+                fresh is None
+                or fresh.total != len(current)
+                or Counter(t.uri for t in current) != Counter(planned_uris)
+            ):
+                raise AgentError(
+                    "A playlist mudou desde a prévia ou tem itens que o app não lê."
+                    " Gere a prévia de novo ou crie uma playlist nova."
+                )
+            undo_id = self.undo_store.save(pid, [t.uri for t in current])
+            url = f"https://open.spotify.com/playlist/{pid}"
+            try:
+                self.spotify.replace_items(pid, planned_uris)
+            except ExternalServiceError:
+                s.plan = None
+                self.tracer("apply_failed", mode=mode.value)
+                return self._say(
+                    s,
+                    "Deu erro no meio da gravação e a playlist pode ter ficado incompleta."
+                    " Use Desfazer para voltar à ordem original.",
+                    State.APPLIED,
+                    result=ApplyResult(mode=mode, playlist_ids=[pid], urls=[url], undo_id=undo_id),
+                )
+            result = ApplyResult(mode=mode, playlist_ids=[pid], urls=[url], undo_id=undo_id)
             message = "Pronto: a playlist original foi reordenada. Se não gostar, use Desfazer."
         else:
             ids: list[str] = []
             urls: list[str] = []
-            for planned in plan.playlists:
-                if not planned.tracks:
-                    continue
-                pid, url = self.spotify.create_playlist(planned.name, planned.description)
-                self.spotify.replace_items(pid, [t.track.uri for t in planned.tracks])
-                ids.append(pid)
-                urls.append(url)
+            names: list[str] = []
+            try:
+                for planned in plan.playlists:
+                    if not planned.tracks:
+                        continue
+                    pid, url = self.spotify.create_playlist(planned.name, planned.description)
+                    self.spotify.replace_items(pid, [t.track.uri for t in planned.tracks])
+                    ids.append(pid)
+                    urls.append(url)
+                    names.append(planned.name)
+            except ExternalServiceError:
+                if names:
+                    s.plan = None
+                    s.state = State.APPLIED
+                    self.tracer("apply_failed", mode=mode.value)
+                    raise AgentError(
+                        f"Falhou no meio da gravação. Já criei: {', '.join(names)}."
+                        " Confira no Spotify antes de tentar de novo."
+                    ) from None
+                raise
             if not ids:
                 raise AgentError("O plano não tem faixas para gravar.")
             result = ApplyResult(mode=mode, playlist_ids=ids, urls=urls)
