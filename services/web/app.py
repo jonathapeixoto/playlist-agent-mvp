@@ -75,7 +75,11 @@ def create_app(deps: AppDeps) -> FastAPI:
         if error or not code or verifier is None:
             reason = html.escape(error or "estado inválido")
             return HTMLResponse(f"<p>Login não concluído ({reason}). <a href='/login'>Tentar de novo</a></p>", status_code=400)
-        deps.auth.exchange_code(code, verifier)
+        try:
+            deps.auth.exchange_code(code, verifier)
+        except (AuthRequired, ExternalServiceError) as err:
+            reason = html.escape(str(err) or "erro desconhecido")
+            return HTMLResponse(f"<p>Login não concluído ({reason}). <a href='/login'>Tentar de novo</a></p>", status_code=400)
         return RedirectResponse("/")
 
     @app.get("/api/status")

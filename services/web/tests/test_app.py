@@ -99,6 +99,21 @@ def test_callback_with_error_or_unknown_state_is_400(ctx):
     assert client.get("/callback", params={"code": "c", "state": "inventado"}).status_code == 400
 
 
+def test_callback_exchange_failure_renders_html_page(ctx):
+    client, deps = ctx
+
+    def boom(code, verifier):
+        raise ExternalServiceError("Spotify fora do ar")
+
+    deps.auth.exchange_code = boom
+    response = client.get("/login", follow_redirects=False)
+    query = parse_qs(urlparse(response.headers["location"]).query)
+    callback = client.get("/callback", params={"code": "c1", "state": query["state"][0]})
+    assert callback.status_code == 400
+    assert "Spotify fora do ar" in callback.text
+    assert callback.headers["content-type"].startswith("text/html")
+
+
 def test_stats_and_reset(ctx):
     client, _ = ctx
     assert client.get("/api/stats").json()["events"] == 0
