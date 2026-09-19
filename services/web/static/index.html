@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Playlist Agent</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Playlist Agent</h1>
+    <span id="status" class="status">verificando...</span>
+    <a id="login" class="button" href="/login" hidden>Entrar com Spotify</a>
+    <button id="reset" class="ghost" type="button">Nova conversa</button>
+  </header>
+  <main class="layout">
+    <section class="chat">
+      <div id="chat-log" class="log" aria-live="polite"></div>
+      <form id="composer" class="composer">
+        <input id="text" autocomplete="off" placeholder="Ex.: organiza minha playlist Treino por BPM" required>
+        <button type="submit">Enviar</button>
+      </form>
+    </section>
+    <section id="preview" class="preview" hidden></section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>
