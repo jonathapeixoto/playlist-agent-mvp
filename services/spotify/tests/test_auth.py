@@ -107,3 +107,31 @@ def test_corrupted_token_file_loads_as_none(tmp_path):
     store.path.parent.mkdir(parents=True, exist_ok=True)
     store.path.write_text("not json", encoding="utf-8")
     assert store.load() is None
+
+
+def test_concurrent_access_token_refreshes_only_once(tmp_path):
+    # Spotify troca o refresh token a cada renovação; dois refresh em paralelo com o mesmo token antigo
+    # fariam um deles receber invalid_grant e apagar o login.
+    import threading
+    import time as _time
+
+    class SlowTokenEndpoint:
+        def __init__(self):
+            self.posts = 0
+
+        def post(self, url, data):
+            self.posts += 1
+            _time.sleep(0.05)
+            return httpx.Response(200, json={"access_token": f"a{self.posts}", "refresh_token": f"r{self.posts}", "expires_in": 3600})
+
+    http = SlowTokenEndpoint()
+    auth = SpotifyAuth("cid", "http://127.0.0.1:8000/callback", TokenStore(tmp_path / "t.json"), http, clock=lambda: 1000.0)
+    auth.store.save(Token(access_token="old", refresh_token="r0", expires_at=0))
+    results = []
+    threads = [threading.Thread(target=lambda: results.append(auth.access_token())) for _ in range(4)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert http.posts == 1
+    assert results == ["a1"] * 4

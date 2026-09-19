@@ -29,3 +29,17 @@ def test_genres_round_trip_and_empty_expires(tmp_path):
     clock["now"] = EnrichmentCache.NEGATIVE_TTL + 1
     assert cache.get_genres("ar") == ["rock"]
     assert cache.get_genres("empty") is None
+
+
+def test_old_negative_audio_entries_are_purged_once_on_upgrade(tmp_path):
+    path = tmp_path / "c.sqlite"
+    cache = EnrichmentCache(path)
+    cache.put_audio({"hit": AudioFeatures(tempo=100.0)}, missing=["miss"])
+    # Simula um cache criado antes da busca por versões alternativas.
+    cache.db.execute("DELETE FROM meta")
+    cache.db.commit()
+    reopened = EnrichmentCache(path)
+    assert reopened.get_audio(["hit", "miss"]) == {"hit": AudioFeatures(tempo=100.0)}
+    # Negativos gravados depois da migração continuam valendo.
+    reopened.put_audio({}, missing=["miss"])
+    assert EnrichmentCache(path).get_audio(["miss"]) == {"miss": None}
