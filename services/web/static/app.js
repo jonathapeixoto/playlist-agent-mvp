@@ -67,6 +67,7 @@ function render(reply) {
 }
 
 function renderOptions(options) {
+  for (const stale of log.querySelectorAll(".options")) stale.remove();
   const box = el("div", { class: "options" });
   options.forEach((option, index) => {
     const pick = () => {
