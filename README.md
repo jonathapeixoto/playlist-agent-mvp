@@ -49,6 +49,7 @@ O agente propõe opções, você escolhe, vê a prévia (BPM, gênero e posiçã
 - O Spotify não informa mais BPM: ele vem da ReccoBeats, que não conhece todas as músicas. Faixas sem BPM vão para o fim.
 - O app só lê playlists suas ou colaborativas.
 - O Spotify não deixa renomear músicas: o tema "prédio" escolhe músicas cujo título já contém o andar.
+- `data/` (token do Spotify, cache e traces) fica dentro da pasta do projeto e está no `.gitignore`. Se a pasta estiver no OneDrive, esses arquivos também são sincronizados; mova o projeto para fora do OneDrive se preferir mantê-los só na máquina.
 
 ## Desenvolvimento
 

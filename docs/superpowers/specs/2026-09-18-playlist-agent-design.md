@@ -70,7 +70,7 @@ Fluxo de descoberta (tema "prédio"):
 ## Medição (outcome + trace)
 Log JSONL em `data/traces.jsonl` por interação, com:
 - acerto de intenção (eval), cobertura de BPM (% de faixas com tempo), cobertura de gênero, taxa de validação de sugestões do LLM (% de candidatos achados no Spotify), latência do LLM.
-- Página `/stats` simples lendo esse arquivo.
+- Endpoint `/api/stats` (JSON, abre direto no navegador) lendo esse arquivo.
 
 ## Testes e evals
 - **Gate tests (pytest, sem rede, <2s):** organizer (ordenações, arco, agrupamento, casamento de títulos com números por extenso), spotify (paginação, renomeados `/items`, refresh, 429) com respx, enrichment (cache, fallback Last.fm), agent (transições de estado com LLM fake), contratos. Pre-commit hook roda a suíte.
