@@ -12,9 +12,9 @@ from typing import Callable
 from urllib.parse import urlencode
 
 import httpx
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
-from contracts.errors import AuthRequired
+from contracts.errors import AuthRequired, ExternalServiceError
 
 AUTHORIZE_URL = "https://accounts.spotify.com/authorize"
 TOKEN_URL = "https://accounts.spotify.com/api/token"
@@ -42,7 +42,10 @@ class TokenStore:
     def load(self) -> Token | None:
         if not self.path.exists():
             return None
-        return Token.model_validate(json.loads(self.path.read_text(encoding="utf-8")))
+        try:
+            return Token.model_validate(json.loads(self.path.read_text(encoding="utf-8")))
+        except (json.JSONDecodeError, ValidationError):
+            return None
 
     def save(self, token: Token) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -90,18 +93,25 @@ class SpotifyAuth:
         self.clock = clock
 
     def _post(self, form: dict[str, str], previous_refresh: str | None) -> Token:
-        response = self.http.post(TOKEN_URL, data=form)
-        if response.status_code != 200:
+        try:
+            response = self.http.post(TOKEN_URL, data=form)
+        except httpx.HTTPError as err:
+            raise ExternalServiceError(f"Sem conexão com o Spotify: {err}")
+
+        if response.status_code == 200:
+            data = response.json()
+            token = Token(
+                access_token=data["access_token"],
+                refresh_token=data.get("refresh_token") or previous_refresh or "",
+                expires_at=self.clock() + float(data["expires_in"]),
+            )
+            self.store.save(token)
+            return token
+        elif 400 <= response.status_code < 500:
             self.store.clear()
             raise AuthRequired(f"Spotify recusou o token ({response.status_code}). Faça login de novo.")
-        data = response.json()
-        token = Token(
-            access_token=data["access_token"],
-            refresh_token=data.get("refresh_token") or previous_refresh or "",
-            expires_at=self.clock() + float(data["expires_in"]),
-        )
-        self.store.save(token)
-        return token
+        else:
+            raise ExternalServiceError(f"Spotify indisponível ao renovar o login ({response.status_code}). Tente de novo.")
 
     def exchange_code(self, code: str, verifier: str) -> Token:
         form = {

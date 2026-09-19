@@ -4,7 +4,7 @@ import httpx
 import pytest
 import respx
 
-from contracts.errors import AuthRequired
+from contracts.errors import AuthRequired, ExternalServiceError
 from services.spotify.auth import (
     TOKEN_URL, SpotifyAuth, Token, TokenStore, authorize_url, code_challenge, make_verifier,
 )
@@ -80,3 +80,30 @@ def test_access_token_without_login_requires_auth(tmp_path):
     auth, _ = _auth(tmp_path)
     with pytest.raises(AuthRequired):
         auth.access_token()
+
+
+@respx.mock
+def test_refresh_server_error_keeps_token(tmp_path):
+    respx.post(TOKEN_URL).mock(return_value=httpx.Response(503, json={"error": "service_unavailable"}))
+    auth, _ = _auth(tmp_path)
+    auth.store.save(Token(access_token="a1", refresh_token="r1", expires_at=0))
+    with pytest.raises(ExternalServiceError):
+        auth.access_token()
+    assert auth.has_token()
+
+
+@respx.mock
+def test_refresh_network_error_keeps_token(tmp_path):
+    respx.post(TOKEN_URL).side_effect = httpx.ConnectError("offline")
+    auth, _ = _auth(tmp_path)
+    auth.store.save(Token(access_token="a1", refresh_token="r1", expires_at=0))
+    with pytest.raises(ExternalServiceError):
+        auth.access_token()
+    assert auth.has_token()
+
+
+def test_corrupted_token_file_loads_as_none(tmp_path):
+    store = TokenStore(tmp_path / "token.json")
+    store.path.parent.mkdir(parents=True, exist_ok=True)
+    store.path.write_text("not json", encoding="utf-8")
+    assert store.load() is None
