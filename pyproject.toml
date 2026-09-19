@@ -28,3 +28,7 @@ packages = ["contracts", "services"]
 addopts = "-q --import-mode=importlib"
 testpaths = ["contracts", "services"]
 pythonpath = ["."]
+filterwarnings = [
+  "ignore:Using.*httpx.*starlette.testclient.*deprecated",
+  "ignore:The anyio.abc.BlockingPortal.*deprecated",
+]
