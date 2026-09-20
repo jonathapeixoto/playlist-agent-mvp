@@ -18,7 +18,7 @@ from services.enrichment.enricher import Enricher
 from services.enrichment.genres import GenreResolver, LastFmClient
 from services.enrichment.reccobeats import ReccoBeatsClient
 from services.llm.api import ClaudeLLM
-from services.llm.runner import ClaudeRunner
+from services.llm.providers.claude_code import ClaudeRunner
 from services.spotify.auth import SpotifyAuth, TokenStore
 from services.spotify.client import SpotifyClient
 from services.web.settings import Settings
