@@ -135,8 +135,8 @@ function renderResult(result) {
 }
 
 function greet() {
-  say("agent", "Oi! Posso reorganizar uma playlist sua (por BPM ou por gênero) ou montar uma nova com tema, " +
-    "tipo um prédio com Primeiro Andar, Segundo Andar... O que vamos fazer?");
+  say("agent", "Oi! Me diga o que você quer fazer com suas playlists. Posso reordenar por andamento, " +
+    "agrupar por gênero, dividir uma playlist grande em várias, ou montar uma nova a partir de um tema.");
 }
 
 form.addEventListener("submit", (event) => {
