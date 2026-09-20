@@ -1,8 +1,10 @@
 # Playlist Agent
 
-Converse com um agente de IA para criar, organizar e otimizar playlists do Spotify: por BPM, por gênero, ou por temas como o "prédio" (Térreo, Primeiro Andar, Segundo Andar...).
+Um agente de IA que organiza suas playlists do Spotify por conversa. Você diz o que quer, ele propõe algumas formas de organizar, mostra como ficaria e só grava depois que você confirmar.
 
-Tudo roda na sua máquina. A IA é o Claude Code instalado localmente; nada é gravado no Spotify sem você clicar em confirmar.
+Dá para ordenar por andamento, agrupar por gênero, separar uma playlist grande em várias, ou montar uma playlist nova a partir de um tema, escolhendo músicas cujo título combina com a ideia.
+
+Tudo roda na sua máquina, com o Claude Code que você já tem instalado.
 
 ## Como funciona
 
@@ -39,7 +41,7 @@ Pré-requisitos: Python 3.12+, [uv](https://docs.astral.sh/uv/), [Claude Code](h
 
 - "organiza minha playlist Treino por BPM"
 - "separa a Churrasco em várias playlists por gênero"
-- "faz uma playlist prédio com músicas tipo primeiro andar, segundo andar"
+- "quero uma playlist em que os títulos das músicas contem uma história"
 
 O agente propõe opções, você escolhe, vê a prévia (BPM, gênero e posição anterior de cada faixa) e confirma. Por padrão ele cria uma playlist **nova e privada**. "Substituir a original" reordena a sua playlist e oferece **Desfazer**.
 
