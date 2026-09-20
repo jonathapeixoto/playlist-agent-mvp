@@ -14,7 +14,8 @@ from pathlib import Path
 
 from services.llm.api import ClaudeLLM
 from services.llm.evals.scoring import score_intent
-from services.llm.runner import ClaudeRunner, LLMError
+from services.llm.providers.claude_code import ClaudeRunner
+from services.llm.runner import LLMError
 
 THRESHOLD = 0.9
 CASES = Path(__file__).parent / "intent_cases.jsonl"

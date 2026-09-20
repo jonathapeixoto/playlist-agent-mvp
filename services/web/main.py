@@ -7,7 +7,7 @@ import webbrowser
 
 import uvicorn
 
-from services.llm.runner import ClaudeRunner
+from services.llm.providers.claude_code import ClaudeRunner
 from services.web.app import create_app
 from services.web.settings import Settings
 from services.web.wiring import build_deps
