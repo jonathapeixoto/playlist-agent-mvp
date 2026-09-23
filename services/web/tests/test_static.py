@@ -26,3 +26,16 @@ def test_index_and_assets_are_served(tmp_path):
 def test_frontend_never_uses_innerhtml(tmp_path):
     # Títulos de música vêm de fora; tudo entra na página como texto (textContent), nunca como HTML.
     assert "innerHTML" not in _client(tmp_path).get("/static/app.js").text
+
+
+def test_page_has_the_engine_panel(tmp_path):
+    page = _client(tmp_path).get("/").text
+    assert 'id="engine"' in page and 'id="llm-panel"' in page
+    assert 'id="llm-preset"' in page and 'id="llm-model"' in page and 'id="llm-key"' in page
+    assert 'type="password"' in page
+
+
+def test_frontend_talks_to_the_engine_routes(tmp_path):
+    script = _client(tmp_path).get("/static/app.js").text
+    assert '"/api/llm"' in script and '"/api/llm/test"' in script
+    assert "innerHTML" not in script
