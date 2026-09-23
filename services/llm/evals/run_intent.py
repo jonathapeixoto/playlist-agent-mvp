@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from services.llm.api import AgentLLM
-from services.llm.evals.scoring import score_intent
+from services.llm.scoring import score_intent
 from services.llm.providers.claude_code import ClaudeRunner
 from services.llm.runner import LLMError
 

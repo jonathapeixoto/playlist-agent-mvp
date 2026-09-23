@@ -1,5 +1,5 @@
 from contracts.models import Intent, StrategyChoice
-from services.llm.evals.scoring import score_intent
+from services.llm.scoring import score_intent
 
 
 def _intent(**kw):
