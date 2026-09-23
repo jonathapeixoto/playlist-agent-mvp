@@ -136,8 +136,9 @@ def create_app(deps: AppDeps) -> FastAPI:
         provider = ProviderKind.CLAUDE_CODE if body.preset == "claude_code" else ProviderKind.OPENAI
         base_url = body.base_url or (preset.base_url if preset else "")
         current = _current_config()
-        # A chave não volta para a tela, então um campo vazio significa "mantém a que já estava".
-        api_key = body.api_key or (current.api_key if current.preset == body.preset else "")
+        keeps_key = current.preset == body.preset and current.base_url == base_url
+        # Campo vazio mantém a chave salva, mas só quando o destino é o mesmo.
+        api_key = body.api_key or (current.api_key if keeps_key else "")
         return LLMConfig(provider=provider, model=body.model, base_url=base_url, api_key=api_key, preset=body.preset)
 
     @app.get("/api/llm")
