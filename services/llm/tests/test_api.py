@@ -59,3 +59,18 @@ def test_set_runner_takes_effect_on_the_next_call():
     llm.set_runner(second, "B")
     assert llm.interpret("oi", [], []).reply == "dois"
     assert llm.description == "B"
+
+
+def test_trace_keeps_the_engine_that_actually_answered():
+    events = []
+    llm = AgentLLM(None, tracer=lambda event, **f: events.append(f), description="Motor A")
+
+    class SwappingRunner:
+        def run(self, system, prompt, schema):
+            # O usuário troca de motor no meio da chamada.
+            llm.set_runner(SwappingRunner(), "Motor B")
+            return RunResult(data={"action": "chat", "reply": "oi", "options": []}, latency_s=1.0, cost_usd=0.5)
+
+    llm.set_runner(SwappingRunner(), "Motor A")
+    llm.interpret("oi", [], [])
+    assert events[0]["motor"] == "Motor A"

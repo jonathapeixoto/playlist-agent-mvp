@@ -42,9 +42,12 @@ class AgentLLM:
         self.description = description
 
     def _call(self, kind: str, prompt_name: str, prompt: str, model_cls: type) -> Any:
-        model, run = call_structured(self.runner, load_prompt(prompt_name), prompt, model_cls)
+        # Captura runner e descrição localmente: se o usuário trocar de motor enquanto esta
+        # chamada está em andamento, o trace continua atribuído a quem realmente respondeu.
+        runner, description = self.runner, self.description
+        model, run = call_structured(runner, load_prompt(prompt_name), prompt, model_cls, engine=description)
         self.tracer(
-            "llm", kind=kind, latency_s=round(run.latency_s, 2), cost_usd=run.cost_usd, motor=self.description
+            "llm", kind=kind, latency_s=round(run.latency_s, 2), cost_usd=run.cost_usd, motor=description
         )
         return model
 
