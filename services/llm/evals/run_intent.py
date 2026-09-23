@@ -12,7 +12,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from services.llm.api import ClaudeLLM
+from services.llm.api import AgentLLM
 from services.llm.evals.scoring import score_intent
 from services.llm.providers.claude_code import ClaudeRunner
 from services.llm.runner import LLMError
@@ -22,7 +22,7 @@ CASES = Path(__file__).parent / "intent_cases.jsonl"
 PLAYLISTS = ["Treino", "Churrasco", "Estudo", "Rock Nacional", "Festa 2025", "Relax"]
 
 
-def _run_case(llm: ClaudeLLM, case: dict) -> dict:
+def _run_case(llm: AgentLLM, case: dict) -> dict:
     try:
         intent = llm.interpret(case["message"], [], PLAYLISTS)
         ok, why = score_intent(case, intent)
@@ -34,7 +34,7 @@ def _run_case(llm: ClaudeLLM, case: dict) -> dict:
 
 def main() -> int:
     cases = [json.loads(line) for line in CASES.read_text(encoding="utf-8").splitlines() if line.strip()]
-    llm = ClaudeLLM(ClaudeRunner())
+    llm = AgentLLM(ClaudeRunner())
     with ThreadPoolExecutor(max_workers=4) as pool:
         rows = list(pool.map(lambda c: _run_case(llm, c), cases))
     score = sum(r["ok"] for r in rows) / len(rows)
