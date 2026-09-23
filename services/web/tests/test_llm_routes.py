@@ -108,3 +108,12 @@ def test_claude_code_preset_saves_without_key_or_url(ctx):
     client, deps, _ = ctx
     assert client.post("/api/llm", json={"preset": "claude_code", "model": "haiku"}).json()["ok"] is True
     assert deps.llm_store.load().provider == ProviderKind.CLAUDE_CODE
+
+
+def test_key_is_not_reused_when_the_custom_endpoint_changes(ctx):
+    client, deps, _ = ctx
+    client.post("/api/llm", json={"preset": "custom", "model": "m", "base_url": "https://a.exemplo/v1", "api_key": "k-a"})
+    client.post("/api/llm", json={"preset": "custom", "model": "m", "base_url": "https://b.exemplo/v1", "api_key": ""})
+    saved = deps.llm_store.load()
+    assert saved.base_url == "https://b.exemplo/v1"
+    assert saved.api_key == ""
