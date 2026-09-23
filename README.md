@@ -37,6 +37,25 @@ Pré-requisitos: Python 3.12+, [uv](https://docs.astral.sh/uv/), [Claude Code](h
    ```
 5. No navegador, clique em **Entrar com Spotify**.
 
+## Escolher o motor de IA
+
+Por padrão o app usa o Claude Code instalado na sua máquina. Para trocar, clique em **Motor de IA** no topo da tela. Dá para usar:
+
+- **Claude Code (nesta máquina):** sem chave, usa o login que você já fez no terminal.
+- **Google Gemini, Groq, OpenRouter, Mistral:** precisam de uma chave gratuita do provedor; o painel mostra o link de onde pegar.
+- **Ollama ou LM Studio:** modelos rodando no seu computador, sem chave e sem enviar nada para fora.
+- **Personalizado:** qualquer endereço que fale o formato da OpenAI.
+
+Ao salvar, o app faz 3 chamadas de teste (entender um pedido, propor opções e montar um tema pequeno). O motor só passa a valer se as três funcionarem, então modelos pequenos demais são recusados na hora, com o motivo na tela.
+
+A chave fica em `data/llm.json`, na sua máquina, em texto simples, do mesmo jeito que o token do Spotify. Essa pasta está no `.gitignore`.
+
+Para comparar motores com os mesmos 25 casos:
+
+```bash
+PLAYLIST_AGENT_PRESET=gemini PLAYLIST_AGENT_API_KEY=sua-chave uv run python -m services.llm.evals.run_intent
+```
+
 ## Uso
 
 - "organiza minha playlist Treino por BPM"

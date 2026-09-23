@@ -1,6 +1,6 @@
 # Spec: motor de IA plugável
 
-Data: 2026-09-19 · Status: aguardando revisão do Jone
+Data: 2026-09-19 · Status: implementado (verificação com motor real pendente)
 
 ## Contexto
 
@@ -99,3 +99,9 @@ Evals pagos, rodados à mão:
 3. Configurar um modelo fraco de propósito (por exemplo, um modelo pequeno no Ollama): o teste falha com o motivo, e o motor anterior continua valendo.
 4. Colar uma chave errada: o teste falha com "chave recusada", e nada é salvo.
 5. Rodar o eval de intenção em dois motores e comparar acerto, tempo e custo.
+
+## Resultados medidos
+
+- Gate tests: o número e o tempo da última linha de `uv run pytest`.
+- Teste de compatibilidade: para cada motor testado no painel, quais das 3 checagens passaram e o motivo de qualquer falha.
+- Eval de intenção por motor: acerto, tempo médio e custo de cada relatório em `data/evals/intent-*.json`, um por motor.
