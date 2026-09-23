@@ -56,6 +56,8 @@ Para comparar motores com os mesmos 25 casos:
 PLAYLIST_AGENT_PRESET=gemini PLAYLIST_AGENT_API_KEY=sua-chave uv run python -m services.llm.evals.run_intent
 ```
 
+Acrescente `PLAYLIST_AGENT_MODEL=outro-modelo` para trocar o modelo sugerido pelo preset (por exemplo, testar um Gemini diferente do padrão sem mexer no preset).
+
 ## Uso
 
 - "organiza minha playlist Treino por BPM"

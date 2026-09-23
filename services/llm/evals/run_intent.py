@@ -1,4 +1,6 @@
-"""Eval de interpretação contra o Claude Code real. Custa tokens (~US$ 0,03 por caso).
+"""Eval de interpretação no motor configurado (data/llm.json) ou no indicado pelas variáveis de
+ambiente PLAYLIST_AGENT_PRESET/PLAYLIST_AGENT_MODEL/PLAYLIST_AGENT_API_KEY. Custa tokens; o custo
+por caso depende do provedor escolhido.
 
 Uso: uv run python -m services.llm.evals.run_intent
 Sai com código 1 se o acerto ficar abaixo de THRESHOLD.
