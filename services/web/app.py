@@ -5,6 +5,7 @@ from __future__ import annotations
 import html
 import secrets
 import threading
+from dataclasses import asdict
 from pathlib import Path
 
 from fastapi import FastAPI, Query, Request
@@ -14,9 +15,12 @@ from pydantic import BaseModel
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from contracts.errors import AuthRequired, ExternalServiceError
-from contracts.models import AgentReply, ApplyMode
+from contracts.models import AgentReply, ApplyMode, LLMConfig, ProviderKind
 from services.agent.agent import AgentError, Session
 from services.agent.trace import summarize
+from services.llm.compat import check as default_compat_check
+from services.llm.factory import build_runner, describe
+from services.llm.registry import PRESETS, find
 from services.spotify.auth import authorize_url, code_challenge, make_verifier
 from services.web.wiring import AppDeps
 
@@ -37,6 +41,13 @@ class ApplyIn(BaseModel):
 
 class UndoIn(BaseModel):
     undo_id: int
+
+
+class LLMConfigIn(BaseModel):
+    preset: str = "custom"
+    model: str
+    base_url: str = ""
+    api_key: str = ""
 
 
 def create_app(deps: AppDeps) -> FastAPI:
@@ -115,5 +126,45 @@ def create_app(deps: AppDeps) -> FastAPI:
     @app.get("/api/stats")
     def stats() -> dict:
         return summarize(deps.trace_path)
+
+    def _current_config() -> LLMConfig:
+        saved = deps.llm_store.load() if deps.llm_store else None
+        return saved or LLMConfig(provider=ProviderKind.CLAUDE_CODE, model=deps.settings.model)
+
+    def _config_from(body: LLMConfigIn) -> LLMConfig:
+        preset = find(body.preset)
+        provider = ProviderKind.CLAUDE_CODE if body.preset == "claude_code" else ProviderKind.OPENAI
+        base_url = body.base_url or (preset.base_url if preset else "")
+        current = _current_config()
+        # A chave não volta para a tela, então um campo vazio significa "mantém a que já estava".
+        api_key = body.api_key or (current.api_key if current.preset == body.preset else "")
+        return LLMConfig(provider=provider, model=body.model, base_url=base_url, api_key=api_key, preset=body.preset)
+
+    @app.get("/api/llm")
+    def llm_config() -> dict:
+        return {
+            "current": _current_config().to_public_dict(),
+            "description": getattr(deps.llm, "description", ""),
+            "presets": [asdict(p) for p in PRESETS],
+        }
+
+    @app.post("/api/llm/test")
+    def llm_test(body: LLMConfigIn) -> dict:
+        runner = build_runner(_config_from(body), deps.http)
+        return (deps.compat_check or default_compat_check)(runner).to_dict()
+
+    @app.post("/api/llm")
+    def llm_save(body: LLMConfigIn):
+        config = _config_from(body)
+        runner = build_runner(config, deps.http)
+        report = (deps.compat_check or default_compat_check)(runner)
+        if not report.ok:
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "O motor não passou no teste. Nada foi salvo.", "report": report.to_dict()},
+            )
+        deps.llm_store.save(config)
+        deps.llm.set_runner(runner, describe(config))
+        return {"ok": True, "description": describe(config), "report": report.to_dict()}
 
     return app

@@ -36,6 +36,7 @@ class AppDeps:
     llm: Any = None
     llm_store: Any = None
     http: Any = None
+    compat_check: Any = None
 
 
 def build_deps(settings: Settings, claude_ok: bool) -> AppDeps:
