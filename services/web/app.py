@@ -164,8 +164,9 @@ def create_app(deps: AppDeps) -> FastAPI:
                 status_code=400,
                 content={"detail": "O motor não passou no teste. Nada foi salvo.", "report": report.to_dict()},
             )
-        deps.llm_store.save(config)
-        deps.llm.set_runner(runner, describe(config))
+        with lock:
+            deps.llm_store.save(config)
+            deps.llm.set_runner(runner, describe(config))
         return {"ok": True, "description": describe(config), "report": report.to_dict()}
 
     return app
