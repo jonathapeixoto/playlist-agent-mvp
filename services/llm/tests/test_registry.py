@@ -32,3 +32,7 @@ def test_claude_code_preset_has_no_base_url_and_no_key():
 
 def test_find_unknown_key():
     assert find("inventado") is None
+
+
+def test_custom_preset_offers_a_key_field():
+    assert find("custom").needs_key

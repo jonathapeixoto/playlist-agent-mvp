@@ -39,3 +39,9 @@ def test_frontend_talks_to_the_engine_routes(tmp_path):
     script = _client(tmp_path).get("/static/app.js").text
     assert '"/api/llm"' in script and '"/api/llm/test"' in script
     assert "innerHTML" not in script
+
+
+def test_hidden_panel_rows_are_really_hidden(tmp_path):
+    # display: grid nos labels venceria o [hidden] do navegador sem esta regra.
+    css = _client(tmp_path).get("/static/style.css").text
+    assert "label[hidden]" in css and "display: none" in css.split("label[hidden]")[1][:60]

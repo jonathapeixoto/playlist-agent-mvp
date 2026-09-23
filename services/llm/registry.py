@@ -29,7 +29,7 @@ PRESETS: tuple[Preset, ...] = (
            "https://ollama.com/download"),
     Preset("lmstudio", "LM Studio (nesta máquina)", "http://127.0.0.1:1234/v1", "local-model", False,
            "https://lmstudio.ai"),
-    Preset("custom", "Personalizado", "", "", False, ""),
+    Preset("custom", "Personalizado", "", "", True, ""),
 )
 
 
