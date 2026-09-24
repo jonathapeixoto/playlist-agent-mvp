@@ -1,6 +1,6 @@
 # Spec: motor de IA plugável
 
-Data: 2026-09-19 · Status: implementado (verificação com motor real pendente)
+Data: 2026-09-19 · Status: implementado e verificado em 24/09/2026
 
 ## Contexto
 
@@ -100,8 +100,19 @@ Evals pagos, rodados à mão:
 4. Colar uma chave errada: o teste falha com "chave recusada", e nada é salvo.
 5. Rodar o eval de intenção em dois motores e comparar acerto, tempo e custo.
 
-## Resultados medidos
+## Resultados medidos (24/09/2026)
 
-- Gate tests: o número e o tempo da última linha de `uv run pytest`.
-- Teste de compatibilidade: para cada motor testado no painel, quais das 3 checagens passaram e o motivo de qualquer falha.
-- Eval de intenção por motor: acerto, tempo médio e custo de cada relatório em `data/evals/intent-*.json`, um por motor.
+- Gate tests: 270 testes, cerca de 2,5s, sem avisos.
+- Teste de compatibilidade: as 3 checagens passaram no Claude Code com o modelo sonnet, escolhido pelo painel.
+- Eval de interpretação, mesmos 25 casos: 100% de acerto com sonnet (`data/evals/intent-20260924-185437.json`)
+  e 100% com opus (`data/evals/intent-20260919-010243.json`).
+- Custo e tempo por chamada, mesmo pedido nos dois modelos: sonnet US$ 0,0236 em 12,0s; opus US$ 0,0906 em 15,3s.
+  Ou seja, trocar opus por sonnet corta cerca de 3/4 do custo sem perder acerto nesses casos.
+- O eval passou a registrar custo e tempo por execução, então a comparação entre motores sai direto do relatório.
+
+## O que ficou aberto
+
+- Nenhum provedor externo foi exercitado com chave real ainda (Gemini, Groq, Ollama). O caminho está testado com
+  HTTP simulado e o teste de compatibilidade bloqueia motor ruim, mas o primeiro uso real ainda vai acontecer.
+- Modelo diferente por tarefa continua fora: hoje o motor escolhido atende tanto a interpretação quanto os temas.
+  Os números acima sugerem que sonnet dá conta dos dois.

@@ -71,7 +71,8 @@ def main() -> int:
     print(f"\nAcerto: {score:.0%} (limiar {THRESHOLD:.0%}) no motor {motor}")
     out = Path("data/evals") / f"intent-{time.strftime('%Y%m%d-%H%M%S')}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps({"score": score, "threshold": THRESHOLD, "motor": motor, "rows": rows}, ensure_ascii=False, indent=2), encoding="utf-8")
+    out.write_text(json.dumps({"score": score, "threshold": THRESHOLD, "motor": motor,
+             "custo_total_usd": round(custo, 4), "segundos_por_chamada": round(media, 1), "rows": rows}, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"Relatório: {out}")
     return 0 if score >= THRESHOLD else 1
 
