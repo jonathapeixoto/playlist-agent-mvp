@@ -31,7 +31,7 @@ services/
   llm/                wrapper de `claude -p --output-format json`, prompts versionados, validação pydantic + 1 retry
   agent/              orquestrador da conversa (máquina de estados)
   web/                FastAPI + estático (chat, prévia, botão confirmar/desfazer)
-docs/superpowers/specs/  spec escrita após aprovação
+docs/design/  spec escrita após aprovação
 ```
 
 Cada serviço tem `README.md`, `tests/` e, quando usa LLM, `evals/`.

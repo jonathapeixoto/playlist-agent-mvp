@@ -74,6 +74,10 @@ O agente propõe opções, você escolhe, vê a prévia (BPM, gênero e posiçã
 - O Spotify não deixa renomear músicas: o tema "prédio" escolhe músicas cujo título já contém o andar.
 - `data/` (token do Spotify, cache e traces) fica dentro da pasta do projeto e está no `.gitignore`. Se a pasta estiver no OneDrive, esses arquivos também são sincronizados; mova o projeto para fora do OneDrive se preferir mantê-los só na máquina.
 
+## Documentação
+
+As decisões de projeto estão em `docs/design/` e o passo a passo de cada implementação em `docs/planos/`. Vale a leitura antes de mexer em algum serviço.
+
 ## Desenvolvimento
 
 ```bash
