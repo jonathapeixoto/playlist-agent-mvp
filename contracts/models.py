@@ -167,3 +167,27 @@ class AgentReply(BaseModel):
     options: list[StrategyChoice] = Field(default_factory=list)
     plan: PlaylistPlan | None = None
     result: ApplyResult | None = None
+
+
+class ProviderKind(StrEnum):
+    CLAUDE_CODE = "claude_code"
+    OPENAI = "openai_compatible"
+
+
+class LLMConfig(BaseModel):
+    """Motor de IA escolhido pelo usuário. A chave fica só no servidor."""
+
+    provider: ProviderKind
+    model: str
+    base_url: str = ""
+    api_key: str = ""
+    preset: str = "claude_code"
+
+    def to_public_dict(self) -> dict[str, object]:
+        return {
+            "provider": self.provider.value,
+            "model": self.model,
+            "base_url": self.base_url,
+            "preset": self.preset,
+            "has_key": bool(self.api_key),
+        }

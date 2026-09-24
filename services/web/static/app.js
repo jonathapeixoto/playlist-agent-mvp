@@ -29,7 +29,10 @@ async function api(path, body) {
     loginLink.hidden = false;
     throw new Error(data.detail || "Faça login no Spotify para continuar.");
   }
-  if (!response.ok) throw new Error(typeof data.detail === "string" ? data.detail : `Erro ${response.status}`);
+  if (!response.ok) {
+    if (data.report) renderReport(data.report);
+    throw new Error(typeof data.detail === "string" ? data.detail : `Erro ${response.status}`);
+  }
   return data;
 }
 
@@ -135,8 +138,8 @@ function renderResult(result) {
 }
 
 function greet() {
-  say("agent", "Oi! Posso reorganizar uma playlist sua (por BPM ou por gênero) ou montar uma nova com tema, " +
-    "tipo um prédio com Primeiro Andar, Segundo Andar... O que vamos fazer?");
+  say("agent", "Oi! Me diga o que você quer fazer com suas playlists. Posso reordenar por andamento, " +
+    "agrupar por gênero, dividir uma playlist grande em várias, ou montar uma nova a partir de um tema.");
 }
 
 form.addEventListener("submit", (event) => {
@@ -163,12 +166,114 @@ async function boot() {
     statusEl.classList.toggle("ok", status.logged_in);
     loginLink.hidden = status.logged_in;
     if (!status.claude_ok) {
-      say("error", "Claude Code não encontrado. Rode `claude` no terminal, faça login e reinicie o app.");
+      const engine = await api("/api/llm").catch(() => ({ description: "" }));
+      if (engine.description.startsWith("Claude Code")) {
+        say("error", "Claude Code não encontrado. Rode `claude` no terminal e faça login, ou escolha outro motor em Motor de IA.");
+      }
     }
   } catch (error) {
     say("error", error.message);
   }
   greet();
 }
+
+const panel = document.getElementById("llm-panel");
+const presetSelect = document.getElementById("llm-preset");
+const baseUrlInput = document.getElementById("llm-base-url");
+const modelInput = document.getElementById("llm-model");
+const keyInput = document.getElementById("llm-key");
+const helpText = document.getElementById("llm-help");
+const reportList = document.getElementById("llm-report");
+const currentText = document.getElementById("llm-current");
+let presets = [];
+
+function presetByKey(key) {
+  return presets.find((p) => p.key === key) || null;
+}
+
+function applyPreset(key, { keepFields = false } = {}) {
+  const preset = presetByKey(key);
+  if (!preset) return;
+  if (!keepFields) {
+    baseUrlInput.value = preset.base_url;
+    modelInput.value = preset.model;
+    keyInput.value = "";
+  }
+  document.getElementById("llm-base-url-row").hidden = key !== "custom";
+  document.getElementById("llm-key-row").hidden = !preset.needs_key;
+  helpText.replaceChildren();
+  if (preset.help_url) {
+    helpText.append(
+      preset.needs_key ? "Pegue a chave em " : "Saiba mais em ",
+      el("a", { href: preset.help_url, target: "_blank", rel: "noopener" }, preset.help_url));
+  }
+}
+
+function renderReport(report) {
+  reportList.replaceChildren(
+    ...report.checks.map((c) =>
+      el("li", { class: c.ok ? "" : "warn" }, `${c.ok ? "OK" : "FALHOU"} · ${c.name}: ${c.detail} (${c.latency_s}s)`)));
+}
+
+async function loadEngine() {
+  const data = await api("/api/llm");
+  presets = data.presets;
+  presetSelect.replaceChildren(...presets.map((p) => el("option", { value: p.key }, p.label)));
+  presetSelect.value = data.current.preset;
+  applyPreset(data.current.preset);
+  baseUrlInput.value = data.current.base_url;
+  modelInput.value = data.current.model;
+  currentText.textContent = data.current.has_key
+    ? `Em uso: ${data.description} (chave salva)`
+    : `Em uso: ${data.description}`;
+}
+
+function engineBody() {
+  return {
+    preset: presetSelect.value,
+    model: modelInput.value.trim(),
+    base_url: baseUrlInput.value.trim(),
+    api_key: keyInput.value,
+  };
+}
+
+async function submitEngine(path) {
+  reportList.replaceChildren(el("li", {}, "Testando o motor: 3 chamadas reais, pode levar alguns segundos..."));
+  setBusy(true);
+  try {
+    const data = await api(path, engineBody());
+    renderReport(data.report || data);
+    if (data.ok && path === "/api/llm") {
+      currentText.textContent = `Em uso: ${data.description}`;
+      keyInput.value = "";
+      say("agent", `Pronto: agora estou usando ${data.description}.`);
+    }
+  } catch (error) {
+    reportList.replaceChildren(el("li", { class: "warn" }, error.message));
+  } finally {
+    setBusy(false);
+  }
+}
+
+presetSelect.addEventListener("change", () => applyPreset(presetSelect.value));
+document.getElementById("engine").addEventListener("click", async () => {
+  panel.hidden = !panel.hidden;
+  if (!panel.hidden) {
+    reportList.replaceChildren();
+    try {
+      await loadEngine();
+    } catch (error) {
+      reportList.replaceChildren(el("li", { class: "warn" }, error.message));
+    }
+  }
+});
+document.getElementById("llm-close").addEventListener("click", () => {
+  panel.hidden = true;
+});
+document.getElementById("llm-only-test").addEventListener("click", () => submitEngine("/api/llm/test"));
+document.getElementById("llm-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  submitEngine("/api/llm");
+});
 
 boot();
