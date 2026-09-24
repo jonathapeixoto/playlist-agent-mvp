@@ -1,16 +1,14 @@
 # Motor de IA plugável: plano de implementação
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+**Objetivo:** deixar quem usa escolher o motor de IA (Claude Code local ou qualquer API compatível com OpenAI), validado por um teste de compatibilidade que bloqueia motores que não atendem ao formato que o app precisa.
 
-**Goal:** deixar quem usa escolher o motor de IA (Claude Code local ou qualquer API compatível com OpenAI), validado por um teste de compatibilidade que bloqueia motores que não atendem ao formato que o app precisa.
+**Arquitetura:** o agente continua falando com `contracts.ports.LLMPort`. O serviço `services/llm` ganha dois adaptadores (`providers/claude_code.py` e `providers/openai_compatible.py`), presets de provedores, armazenamento local da configuração, uma fábrica que monta o runner e um teste de compatibilidade de 3 chamadas. A troca de motor vale na chamada seguinte, sem reiniciar.
 
-**Architecture:** o agente continua falando com `contracts.ports.LLMPort`. O serviço `services/llm` ganha dois adaptadores (`providers/claude_code.py` e `providers/openai_compatible.py`), presets de provedores, armazenamento local da configuração, uma fábrica que monta o runner e um teste de compatibilidade de 3 chamadas. A troca de motor vale na chamada seguinte, sem reiniciar.
+**Tecnologias:** Python 3.12+, httpx, pydantic v2, FastAPI, pytest + respx, HTML/CSS/JS puro.
 
-**Tech Stack:** Python 3.12+, httpx, pydantic v2, FastAPI, pytest + respx, HTML/CSS/JS puro.
+**Design:** `docs/design/2026-09-19-motor-de-ia-plugavel.md`
 
-**Spec:** `docs/superpowers/specs/2026-09-19-motor-de-ia-plugavel-design.md`
-
-## Global Constraints
+## Regras que valem para tudo
 
 - Nada em `contracts/ports.py`, `services/agent`, `services/organizer`, `services/spotify` ou `services/enrichment` muda de comportamento.
 - Gate tests: sem rede, sem subprocess real, suíte inteira abaixo de 2s. Evals (pagos) são scripts separados, nunca coletados pelo pytest.
@@ -1410,7 +1408,7 @@ git commit -m "feat(web): painel para escolher e testar o motor de IA"
 ### Task 8: medição por motor, eval em qualquer motor e documentação
 
 **Files:**
-- Modify: `services/agent/trace.py`, `services/llm/evals/run_intent.py`, `README.md`, `docs/superpowers/specs/2026-09-19-motor-de-ia-plugavel-design.md`
+- Modify: `services/agent/trace.py`, `services/llm/evals/run_intent.py`, `README.md`, `docs/design/2026-09-19-motor-de-ia-plugavel.md`
 - Test: `services/agent/tests/test_trace.py` (acrescentar)
 
 **Interfaces:**
@@ -1536,7 +1534,7 @@ PLAYLIST_AGENT_PRESET=gemini PLAYLIST_AGENT_API_KEY=sua-chave uv run python -m s
 
 - [ ] **Step 7: Spec**
 
-Em `docs/superpowers/specs/2026-09-19-motor-de-ia-plugavel-design.md`, trocar a linha de status para `Status: implementado (verificação com motor real pendente)` e acrescentar ao fim a seção:
+Em `docs/design/2026-09-19-motor-de-ia-plugavel.md`, trocar a linha de status para `Status: implementado (verificação com motor real pendente)` e acrescentar ao fim a seção:
 
 ```markdown
 ## Resultados medidos
