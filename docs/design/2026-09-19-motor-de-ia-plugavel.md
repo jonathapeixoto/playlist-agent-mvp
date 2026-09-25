@@ -109,10 +109,19 @@ Evals pagos, rodados à mão:
 - Custo e tempo por chamada, mesmo pedido nos dois modelos: sonnet US$ 0,0236 em 12,0s; opus US$ 0,0906 em 15,3s.
   Ou seja, trocar opus por sonnet corta cerca de 3/4 do custo sem perder acerto nesses casos.
 - O eval passou a registrar custo e tempo por execução, então a comparação entre motores sai direto do relatório.
+- Adaptador compatível com OpenAI exercitado contra um servidor HTTP real (um provedor falso local que responde
+  nesse formato), passando pelo painel, pelas rotas, pela fábrica e pelo teste de compatibilidade:
+  - modelo que responde certo: as 3 checagens passam, a configuração é salva e o motor ativo muda na hora;
+  - modelo que devolve texto em vez de JSON: as 3 checagens falham com "não devolveu JSON", nada é salvo e o
+    motor anterior continua valendo;
+  - provedor que recusa a chave (401): falha com "O provedor recusou a chave", nada é salvo;
+  - o pedido chega ao provedor com `Authorization: Bearer`, `response_format` do tipo `json_schema` com
+    `strict: true` e as mensagens de sistema e de usuário, como esperado.
 
 ## O que ficou aberto
 
-- Nenhum provedor externo foi exercitado com chave real ainda (Gemini, Groq, Ollama). O caminho está testado com
-  HTTP simulado e o teste de compatibilidade bloqueia motor ruim, mas o primeiro uso real ainda vai acontecer.
+- Nenhum provedor comercial foi exercitado com chave real ainda (Gemini, Groq, Mistral, OpenRouter). O caminho já
+  roda contra um servidor HTTP real, então o que falta medir é o comportamento de cada serviço: limites do plano
+  gratuito, latência e se o modelo sustenta o formato pedido em uso contínuo.
 - Modelo diferente por tarefa continua fora: hoje o motor escolhido atende tanto a interpretação quanto os temas.
   Os números acima sugerem que sonnet dá conta dos dois.
