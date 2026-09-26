@@ -36,3 +36,9 @@ def test_find_unknown_key():
 
 def test_custom_preset_offers_a_key_field():
     assert find("custom").needs_key
+
+
+def test_gemini_preset_suggests_a_model_that_new_projects_can_use():
+    # A série 2.5 ficou restrita a quem já usava; projeto novo só consegue chave para a 3.x.
+    modelo = find("gemini").model
+    assert modelo.startswith("gemini-3"), modelo

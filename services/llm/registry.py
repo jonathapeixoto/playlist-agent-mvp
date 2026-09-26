@@ -18,10 +18,10 @@ class Preset:
 PRESETS: tuple[Preset, ...] = (
     Preset("claude_code", "Claude Code (nesta máquina)", "", "opus", False, "https://claude.com/claude-code"),
     Preset("gemini", "Google Gemini", "https://generativelanguage.googleapis.com/v1beta/openai",
-           "gemini-2.5-flash", True, "https://aistudio.google.com/apikey"),
+           "gemini-3.8-flash", True, "https://aistudio.google.com/apikey"),
     Preset("groq", "Groq", "https://api.groq.com/openai/v1", "llama-3.3-70b-versatile", True,
            "https://console.groq.com/keys"),
-    Preset("openrouter", "OpenRouter", "https://openrouter.ai/api/v1", "google/gemini-2.5-flash", True,
+    Preset("openrouter", "OpenRouter", "https://openrouter.ai/api/v1", "google/gemini-3.8-flash", True,
            "https://openrouter.ai/keys"),
     Preset("mistral", "Mistral", "https://api.mistral.ai/v1", "mistral-small-latest", True,
            "https://console.mistral.ai/api-keys"),
