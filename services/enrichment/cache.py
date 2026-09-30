@@ -11,6 +11,9 @@ from typing import Callable
 
 from pydantic import BaseModel
 
+# Banco só na memória: usado pelos testes que não precisam reabrir o arquivo.
+MEMORIA = ":memory:"
+
 
 class AudioFeatures(BaseModel):
     tempo: float | None = None
@@ -23,7 +26,8 @@ class EnrichmentCache:
     AUDIO_SCHEMA = 2
 
     def __init__(self, path: Path | str, clock: Callable[[], float] = time.time) -> None:
-        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        if str(path) != MEMORIA:
+            Path(path).parent.mkdir(parents=True, exist_ok=True)
         self.db = sqlite3.connect(str(path), check_same_thread=False)
         self.clock = clock
         self.lock = threading.Lock()

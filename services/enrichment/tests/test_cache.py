@@ -1,8 +1,10 @@
-from services.enrichment.cache import AudioFeatures, EnrichmentCache
+from pathlib import Path
+
+from services.enrichment.cache import MEMORIA, AudioFeatures, EnrichmentCache
 
 
-def test_audio_hits_misses_and_uncached(tmp_path):
-    cache = EnrichmentCache(tmp_path / "c.sqlite", clock=lambda: 1000.0)
+def test_audio_hits_misses_and_uncached():
+    cache = EnrichmentCache(":memory:", clock=lambda: 1000.0)
     cache.put_audio({"a": AudioFeatures(tempo=120.0, energy=0.5)}, missing=["b"])
     got = cache.get_audio(["a", "b", "c"])
     assert got["a"].tempo == 120.0
@@ -10,17 +12,17 @@ def test_audio_hits_misses_and_uncached(tmp_path):
     assert "c" not in got
 
 
-def test_negative_audio_entries_expire(tmp_path):
+def test_negative_audio_entries_expire():
     clock = {"now": 0.0}
-    cache = EnrichmentCache(tmp_path / "c.sqlite", clock=lambda: clock["now"])
+    cache = EnrichmentCache(":memory:", clock=lambda: clock["now"])
     cache.put_audio({}, missing=["b"])
     clock["now"] = EnrichmentCache.NEGATIVE_TTL + 1
     assert "b" not in cache.get_audio(["b"])
 
 
-def test_genres_round_trip_and_empty_expires(tmp_path):
+def test_genres_round_trip_and_empty_expires():
     clock = {"now": 0.0}
-    cache = EnrichmentCache(tmp_path / "c.sqlite", clock=lambda: clock["now"])
+    cache = EnrichmentCache(":memory:", clock=lambda: clock["now"])
     assert cache.get_genres("ar") is None
     cache.put_genres("ar", ["rock"], "spotify")
     cache.put_genres("empty", [], "lastfm")
@@ -43,3 +45,11 @@ def test_old_negative_audio_entries_are_purged_once_on_upgrade(tmp_path):
     # Negativos gravados depois da migração continuam valendo.
     reopened.put_audio({}, missing=["miss"])
     assert EnrichmentCache(path).get_audio(["miss"]) == {"miss": None}
+
+
+def test_memory_database_creates_no_directory():
+    # Os testes usam ":memory:"; isso não pode virar uma pasta chamada ":memory:" no disco.
+    cache = EnrichmentCache(MEMORIA)
+    cache.put_audio({"a": AudioFeatures(tempo=120.0)}, missing=[])
+    assert cache.get_audio(["a"])["a"].tempo == 120.0
+    assert not Path(MEMORIA).exists()
