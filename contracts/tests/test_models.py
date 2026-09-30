@@ -50,3 +50,22 @@ def test_theme_slot_requires_non_blank_keyword():
 def test_agent_reply_round_trips_json():
     reply = AgentReply(message="oi", state=ConversationState.PROPOSE, options=[_strategy()])
     assert AgentReply.model_validate_json(reply.model_dump_json()) == reply
+
+
+def test_llm_config_public_dict_hides_the_key():
+    from contracts.models import LLMConfig, ProviderKind
+
+    config = LLMConfig(provider=ProviderKind.OPENAI, model="gemini-2.5-flash",
+                       base_url="https://exemplo/v1", api_key="segredo", preset="gemini")
+    public = config.to_public_dict()
+    assert public == {
+        "provider": "openai_compatible", "model": "gemini-2.5-flash",
+        "base_url": "https://exemplo/v1", "preset": "gemini", "has_key": True,
+    }
+    assert "segredo" not in str(public)
+
+
+def test_llm_config_without_key_reports_has_key_false():
+    from contracts.models import LLMConfig, ProviderKind
+
+    assert LLMConfig(provider=ProviderKind.CLAUDE_CODE, model="opus").to_public_dict()["has_key"] is False

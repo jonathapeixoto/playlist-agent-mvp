@@ -35,3 +35,16 @@ def test_summarize_computes_metrics(tmp_path):
 def test_summarize_missing_file(tmp_path):
     stats = summarize(tmp_path / "nada.jsonl")
     assert stats["events"] == 0 and stats["avg_bpm_coverage"] is None
+
+
+def test_summarize_groups_by_engine(tmp_path):
+    path = tmp_path / "t.jsonl"
+    tracer = Tracer(path)
+    tracer("llm", kind="interpret", latency_s=2.0, cost_usd=0.10, motor="Claude Code (nesta máquina) · opus")
+    tracer("llm", kind="theme", latency_s=4.0, cost_usd=0.20, motor="Claude Code (nesta máquina) · opus")
+    tracer("llm", kind="interpret", latency_s=1.0, cost_usd=0.0, motor="Google Gemini · gemini-2.5-flash")
+    tracer("llm", kind="interpret", latency_s=1.0, cost_usd=0.0)
+    by_motor = summarize(path)["llm_by_motor"]
+    assert by_motor["Claude Code (nesta máquina) · opus"] == {"calls": 2, "cost_usd": 0.3, "avg_latency_s": 3.0}
+    assert by_motor["Google Gemini · gemini-2.5-flash"]["calls"] == 1
+    assert by_motor["desconhecido"]["calls"] == 1

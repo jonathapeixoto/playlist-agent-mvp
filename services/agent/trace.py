@@ -42,6 +42,15 @@ def summarize(path: Path) -> dict[str, Any]:
     llm, plans, themes = of("llm"), of("plan"), of("theme")
     tried = sum(e.get("candidates_tried", 0) for e in themes)
     valid = sum(e.get("candidates_valid", 0) for e in themes)
+
+    by_motor: dict[str, dict[str, float]] = {}
+    for event in llm:
+        key = str(event.get("motor") or "desconhecido")
+        row = by_motor.setdefault(key, {"calls": 0, "cost_usd": 0.0, "latency_total": 0.0})
+        row["calls"] += 1
+        row["cost_usd"] += event.get("cost_usd", 0.0)
+        row["latency_total"] += event.get("latency_s", 0.0)
+
     return {
         "events": len(events),
         "llm_calls": len(llm),
@@ -54,4 +63,12 @@ def summarize(path: Path) -> dict[str, Any]:
         "theme_candidates_valid": valid,
         "theme_validation_rate": round(valid / tried, 3) if tried else None,
         "applies": len(of("apply")),
+        "llm_by_motor": {
+            key: {
+                "calls": int(row["calls"]),
+                "cost_usd": round(row["cost_usd"], 4),
+                "avg_latency_s": round(row["latency_total"] / row["calls"], 2),
+            }
+            for key, row in by_motor.items()
+        },
     }

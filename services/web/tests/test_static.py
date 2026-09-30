@@ -26,3 +26,22 @@ def test_index_and_assets_are_served(tmp_path):
 def test_frontend_never_uses_innerhtml(tmp_path):
     # Títulos de música vêm de fora; tudo entra na página como texto (textContent), nunca como HTML.
     assert "innerHTML" not in _client(tmp_path).get("/static/app.js").text
+
+
+def test_page_has_the_engine_panel(tmp_path):
+    page = _client(tmp_path).get("/").text
+    assert 'id="engine"' in page and 'id="llm-panel"' in page
+    assert 'id="llm-preset"' in page and 'id="llm-model"' in page and 'id="llm-key"' in page
+    assert 'type="password"' in page
+
+
+def test_frontend_talks_to_the_engine_routes(tmp_path):
+    script = _client(tmp_path).get("/static/app.js").text
+    assert '"/api/llm"' in script and '"/api/llm/test"' in script
+    assert "innerHTML" not in script
+
+
+def test_hidden_panel_rows_are_really_hidden(tmp_path):
+    # display: grid nos labels venceria o [hidden] do navegador sem esta regra.
+    css = _client(tmp_path).get("/static/style.css").text
+    assert "label[hidden]" in css and "display: none" in css.split("label[hidden]")[1][:60]

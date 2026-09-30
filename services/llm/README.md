@@ -2,9 +2,13 @@
 
 Chama o Claude Code local (`claude -p`) com `--json-schema`, `--system-prompt` próprio e `--tools ""`. Nada de API paga.
 
-- `runner.py`: executa o comando, mede latência e custo, transforma falhas em `LLMError`.
-- `structured.py`: gera o JSON Schema a partir dos modelos pydantic e valida a resposta (1 nova tentativa com o erro no prompt).
-- `api.py`: `interpret` (mensagem vira `Intent`) e `plan_theme` (tema vira `ThemePlan`).
+- `providers/claude_code.py`: Claude Code local (`claude -p`), sem chave.
+- `providers/openai_compatible.py`: qualquer API no formato da OpenAI (Gemini, Groq, OpenRouter, Mistral, Ollama, LM Studio).
+- `registry.py`: atalhos de provedor (endereço, modelo sugerido, onde pegar a chave).
+- `config_store.py`: a escolha do usuário em `data/llm.json`.
+- `factory.py`: monta o runner a partir da configuração.
+- `structured.py`: schema JSON a partir dos modelos pydantic, com uma nova tentativa em caso de resposta inválida.
+- `api.py`: `interpret` e `plan_theme`, com troca de motor em tempo de execução.
 - `prompts/`: prompts versionados em markdown. Mudou prompt, rode o eval.
 
 Gate tests: `uv run pytest services/llm` (sem chamar o Claude).

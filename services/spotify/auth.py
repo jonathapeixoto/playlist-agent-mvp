@@ -6,6 +6,7 @@ import base64
 import hashlib
 import json
 import secrets
+import threading
 import time
 from pathlib import Path
 from typing import Callable
@@ -91,6 +92,8 @@ class SpotifyAuth:
         self.store = store
         self.http = http
         self.clock = clock
+        # Serializa leitura/renovação: o Spotify troca o refresh token a cada uso.
+        self._lock = threading.RLock()
 
     def _post(self, form: dict[str, str], previous_refresh: str | None) -> Token:
         try:
@@ -124,19 +127,21 @@ class SpotifyAuth:
         return self._post(form, previous_refresh=None)
 
     def refresh(self) -> Token:
-        current = self.store.load()
-        if current is None or not current.refresh_token:
-            raise AuthRequired("Faça login no Spotify.")
-        form = {"grant_type": "refresh_token", "refresh_token": current.refresh_token, "client_id": self.client_id}
-        return self._post(form, previous_refresh=current.refresh_token)
+        with self._lock:
+            current = self.store.load()
+            if current is None or not current.refresh_token:
+                raise AuthRequired("Faça login no Spotify.")
+            form = {"grant_type": "refresh_token", "refresh_token": current.refresh_token, "client_id": self.client_id}
+            return self._post(form, previous_refresh=current.refresh_token)
 
     def access_token(self) -> str:
-        token = self.store.load()
-        if token is None:
-            raise AuthRequired("Faça login no Spotify.")
-        if token.expired(self.clock()):
-            token = self.refresh()
-        return token.access_token
+        with self._lock:
+            token = self.store.load()
+            if token is None:
+                raise AuthRequired("Faça login no Spotify.")
+            if token.expired(self.clock()):
+                token = self.refresh()
+            return token.access_token
 
     def has_token(self) -> bool:
         return self.store.load() is not None
