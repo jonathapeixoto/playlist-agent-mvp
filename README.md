@@ -41,8 +41,8 @@ Pré-requisitos: Python 3.12+, [uv](https://docs.astral.sh/uv/), [Claude Code](h
 
 Por padrão o app usa o Claude Code instalado na sua máquina. Para trocar, clique em **Motor de IA** no topo da tela. Dá para usar:
 
-- **Claude Code (nesta máquina):** sem chave, usa o login que você já fez no terminal.
-- **Google Gemini, Groq, OpenRouter, Mistral:** precisam de uma chave gratuita do provedor; o painel mostra o link de onde pegar.
+- **Claude Code:** sem chave, usa o login que você já fez no terminal.
+- **Google Gemini, Grok, OpenRouter, Mistral:** precisam de uma chave gratuita do provedor; o painel mostra o link de onde pegar.
 - **Ollama ou LM Studio:** modelos rodando no seu computador, sem chave e sem enviar nada para fora.
 - **Personalizado:** qualquer endereço que fale o formato da OpenAI.
 
