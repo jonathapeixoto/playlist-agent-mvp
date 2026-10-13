@@ -53,3 +53,11 @@ td.missing { color: var(--muted); font-style: italic; }
   .layout { grid-template-columns: 1fr; height: auto; }
   .chat { height: 70vh; }
 }
+.panel { grid-column: 1 / -1; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; margin: 0 20px 16px; }
+.panel h2 { margin-top: 0; }
+.panel-form { display: grid; gap: 10px; max-width: 520px; }
+.panel-form label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.panel-form label[hidden] { display: none; }
+.panel-form input, .panel-form select { background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 14px; }
+#llm-report { margin-top: 12px; font-size: 13px; }
+#llm-report .warn { color: var(--warn); }

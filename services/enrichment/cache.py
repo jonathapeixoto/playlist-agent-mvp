@@ -11,6 +11,9 @@ from typing import Callable
 
 from pydantic import BaseModel
 
+# Banco só na memória: usado pelos testes que não precisam reabrir o arquivo.
+MEMORIA = ":memory:"
+
 
 class AudioFeatures(BaseModel):
     tempo: float | None = None
@@ -19,9 +22,12 @@ class AudioFeatures(BaseModel):
 
 class EnrichmentCache:
     NEGATIVE_TTL = 7 * 24 * 3600
+    # 2: "sem BPM" só é gravado depois de tentar versões alternativas; negativos antigos são descartados.
+    AUDIO_SCHEMA = 2
 
     def __init__(self, path: Path | str, clock: Callable[[], float] = time.time) -> None:
-        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        if str(path) != MEMORIA:
+            Path(path).parent.mkdir(parents=True, exist_ok=True)
         self.db = sqlite3.connect(str(path), check_same_thread=False)
         self.clock = clock
         self.lock = threading.Lock()
@@ -33,6 +39,14 @@ class EnrichmentCache:
             self.db.execute(
                 "CREATE TABLE IF NOT EXISTS genres (artist_id TEXT PRIMARY KEY, genres TEXT, source TEXT, fetched_at REAL)"
             )
+            # Migração idempotente; assume um processo dono do arquivo (o app local).
+            self.db.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)")
+            row = self.db.execute("SELECT value FROM meta WHERE key = 'audio_schema'").fetchone()
+            if row is None or int(row[0]) < self.AUDIO_SCHEMA:
+                self.db.execute("DELETE FROM audio WHERE found = 0")
+                self.db.execute(
+                    "INSERT OR REPLACE INTO meta VALUES ('audio_schema', ?)", (str(self.AUDIO_SCHEMA),)
+                )
 
     def _fresh(self, found: bool, fetched_at: float) -> bool:
         return found or self.clock() - fetched_at <= self.NEGATIVE_TTL

@@ -11,6 +11,7 @@
     <h1>Playlist Agent</h1>
     <span id="status" class="status">verificando...</span>
     <a id="login" class="button" href="/login" hidden>Entrar com Spotify</a>
+    <button id="engine" class="ghost" type="button">Motor de IA</button>
     <button id="reset" class="ghost" type="button">Nova conversa</button>
   </header>
   <main class="layout">
@@ -23,6 +24,31 @@
     </section>
     <section id="preview" class="preview" hidden></section>
   </main>
+  <section id="llm-panel" class="panel" hidden aria-label="Motor de IA">
+    <h2>Motor de IA</h2>
+    <p class="meta" id="llm-current"></p>
+    <form id="llm-form" class="panel-form">
+      <label>Provedor
+        <select id="llm-preset"></select>
+      </label>
+      <label id="llm-base-url-row">Endereço da API
+        <input id="llm-base-url" autocomplete="off" placeholder="https://exemplo.com/v1">
+      </label>
+      <label>Modelo
+        <input id="llm-model" autocomplete="off" required>
+      </label>
+      <label id="llm-key-row">Chave
+        <input id="llm-key" type="password" autocomplete="off" placeholder="vazio mantém a chave atual">
+      </label>
+      <p class="meta" id="llm-help"></p>
+      <div class="actions">
+        <button type="submit">Testar e salvar</button>
+        <button type="button" class="ghost" id="llm-only-test">Só testar</button>
+        <button type="button" class="ghost" id="llm-close">Fechar</button>
+      </div>
+    </form>
+    <ul id="llm-report" class="links"></ul>
+  </section>
   <script src="/static/app.js"></script>
 </body>
 </html>

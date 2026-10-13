@@ -3,7 +3,8 @@ import subprocess
 
 import pytest
 
-from services.llm.runner import ClaudeRunner, LLMError
+from services.llm.providers.claude_code import ClaudeRunner
+from services.llm.runner import LLMError
 
 
 def _completed(payload, returncode=0, stderr=""):
@@ -63,7 +64,7 @@ def test_failures_raise_llm_error(result, tmp_path):
 
 
 def test_missing_binary_raises(tmp_path, monkeypatch):
-    monkeypatch.setattr("services.llm.runner.shutil.which", lambda name: None)
+    monkeypatch.setattr("services.llm.providers.claude_code.shutil.which", lambda name: None)
     with pytest.raises(LLMError, match="claude"):
         ClaudeRunner(cwd=tmp_path).run("s", "p", {})
 
@@ -75,7 +76,7 @@ def test_available_runs_version(tmp_path):
 
 
 def test_available_false_when_missing(tmp_path, monkeypatch):
-    monkeypatch.setattr("services.llm.runner.shutil.which", lambda name: None)
+    monkeypatch.setattr("services.llm.providers.claude_code.shutil.which", lambda name: None)
     assert not ClaudeRunner(cwd=tmp_path).available()
 
 

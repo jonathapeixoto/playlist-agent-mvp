@@ -41,7 +41,9 @@ def inline_schema(model_cls: type[BaseModel]) -> dict[str, Any]:
     return resolve(schema)
 
 
-def call_structured(runner: _Runner, system: str, prompt: str, model_cls: type[T]) -> tuple[T, RunResult]:
+def call_structured(
+    runner: _Runner, system: str, prompt: str, model_cls: type[T], engine: str = ""
+) -> tuple[T, RunResult]:
     schema = inline_schema(model_cls)
     result = runner.run(system, prompt, schema)
     try:
@@ -52,4 +54,6 @@ def call_structured(runner: _Runner, system: str, prompt: str, model_cls: type[T
         try:
             return model_cls.model_validate(result.data), result
         except ValidationError as second:
+            if engine:
+                raise LLMError(f"O motor {engine} devolveu resposta inválida mesmo após nova tentativa: {second}") from second
             raise LLMError(f"Resposta do agente inválida mesmo após nova tentativa: {second}") from second

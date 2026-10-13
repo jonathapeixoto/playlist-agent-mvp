@@ -1,8 +1,10 @@
 # Playlist Agent
 
-Converse com um agente de IA para criar, organizar e otimizar playlists do Spotify: por BPM, por gênero, ou por temas como o "prédio" (Térreo, Primeiro Andar, Segundo Andar...).
+Um agente de IA que organiza suas playlists do Spotify por conversa. Você diz o que quer, ele propõe algumas formas de organizar, mostra como ficaria e só grava depois que você confirmar.
 
-Tudo roda na sua máquina. A IA é o Claude Code instalado localmente; nada é gravado no Spotify sem você clicar em confirmar.
+Dá para ordenar por andamento, agrupar por gênero, separar uma playlist grande em várias, ou montar uma playlist nova a partir de um tema, escolhendo músicas cujo título combina com a ideia.
+
+Tudo roda na sua máquina, com o Claude Code que você já tem instalado.
 
 ## Como funciona
 
@@ -35,11 +37,32 @@ Pré-requisitos: Python 3.12+, [uv](https://docs.astral.sh/uv/), [Claude Code](h
    ```
 5. No navegador, clique em **Entrar com Spotify**.
 
+## Escolher o motor de IA
+
+Por padrão o app usa o Claude Code instalado na sua máquina. Para trocar, clique em **Motor de IA** no topo da tela. Dá para usar:
+
+- **Claude Code (nesta máquina):** sem chave, usa o login que você já fez no terminal.
+- **Google Gemini, Groq, OpenRouter, Mistral:** precisam de uma chave gratuita do provedor; o painel mostra o link de onde pegar.
+- **Ollama ou LM Studio:** modelos rodando no seu computador, sem chave e sem enviar nada para fora.
+- **Personalizado:** qualquer endereço que fale o formato da OpenAI.
+
+Ao salvar, o app faz 3 chamadas de teste (entender um pedido, propor opções e montar um tema pequeno). O motor só passa a valer se as três funcionarem, então modelos pequenos demais são recusados na hora, com o motivo na tela.
+
+A chave fica em `data/llm.json`, na sua máquina, em texto simples, do mesmo jeito que o token do Spotify. Essa pasta está no `.gitignore`.
+
+Para comparar motores com os mesmos 25 casos:
+
+```bash
+PLAYLIST_AGENT_PRESET=gemini PLAYLIST_AGENT_API_KEY=sua-chave uv run python -m services.llm.evals.run_intent
+```
+
+Acrescente `PLAYLIST_AGENT_MODEL=outro-modelo` para trocar o modelo sugerido pelo preset (por exemplo, testar um Gemini diferente do padrão sem mexer no preset).
+
 ## Uso
 
 - "organiza minha playlist Treino por BPM"
 - "separa a Churrasco em várias playlists por gênero"
-- "faz uma playlist prédio com músicas tipo primeiro andar, segundo andar"
+- "quero uma playlist em que os títulos das músicas contem uma história"
 
 O agente propõe opções, você escolhe, vê a prévia (BPM, gênero e posição anterior de cada faixa) e confirma. Por padrão ele cria uma playlist **nova e privada**. "Substituir a original" reordena a sua playlist e oferece **Desfazer**.
 
@@ -50,6 +73,10 @@ O agente propõe opções, você escolhe, vê a prévia (BPM, gênero e posiçã
 - O app só lê playlists suas ou colaborativas.
 - O Spotify não deixa renomear músicas: o tema "prédio" escolhe músicas cujo título já contém o andar.
 - `data/` (token do Spotify, cache e traces) fica dentro da pasta do projeto e está no `.gitignore`. Se a pasta estiver no OneDrive, esses arquivos também são sincronizados; mova o projeto para fora do OneDrive se preferir mantê-los só na máquina.
+
+## Documentação
+
+As decisões de projeto estão em `docs/design/` e o passo a passo de cada implementação em `docs/planos/`. Vale a leitura antes de mexer em algum serviço.
 
 ## Desenvolvimento
 

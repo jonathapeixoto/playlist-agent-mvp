@@ -30,14 +30,25 @@ def _no_trace(event: str, **fields: Any) -> None:
     return None
 
 
-class ClaudeLLM:
-    def __init__(self, runner: Any, tracer: Callable[..., None] | None = None) -> None:
+class AgentLLM:
+    def __init__(self, runner: Any, tracer: Callable[..., None] | None = None, description: str = "") -> None:
         self.runner = runner
         self.tracer = tracer or _no_trace
+        self.description = description
+
+    def set_runner(self, runner: Any, description: str) -> None:
+        """Troca o motor. Vale a partir da próxima chamada; não há estado por motor."""
+        self.runner = runner
+        self.description = description
 
     def _call(self, kind: str, prompt_name: str, prompt: str, model_cls: type) -> Any:
-        model, run = call_structured(self.runner, load_prompt(prompt_name), prompt, model_cls)
-        self.tracer("llm", kind=kind, latency_s=round(run.latency_s, 2), cost_usd=run.cost_usd)
+        # Captura runner e descrição localmente: se o usuário trocar de motor enquanto esta
+        # chamada está em andamento, o trace continua atribuído a quem realmente respondeu.
+        runner, description = self.runner, self.description
+        model, run = call_structured(runner, load_prompt(prompt_name), prompt, model_cls, engine=description)
+        self.tracer(
+            "llm", kind=kind, latency_s=round(run.latency_s, 2), cost_usd=run.cost_usd, motor=description
+        )
         return model
 
     def interpret(self, message: str, history: list[tuple[str, str]], playlist_names: list[str]) -> Intent:

@@ -8,10 +8,14 @@ import threading
 import time
 from pathlib import Path
 
+# Banco só na memória: usado pelos testes que não precisam reabrir o arquivo.
+MEMORIA = ":memory:"
+
 
 class UndoStore:
     def __init__(self, path: Path | str) -> None:
-        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        if str(path) != MEMORIA:
+            Path(path).parent.mkdir(parents=True, exist_ok=True)
         self.db = sqlite3.connect(str(path), check_same_thread=False)
         self.lock = threading.Lock()
         with self.lock, self.db:

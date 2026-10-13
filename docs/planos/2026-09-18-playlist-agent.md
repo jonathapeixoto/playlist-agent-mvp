@@ -1,16 +1,14 @@
 # Playlist Agent Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+**Objetivo:** App local em que o Jone conversa com um agente (Claude Code local) que entende o pedido, propõe modelos de organização (BPM, gênero, tema) e, após confirmação, cria ou reordena playlists no Spotify.
 
-**Goal:** App local em que o Jone conversa com um agente (Claude Code local) que entende o pedido, propõe modelos de organização (BPM, gênero, tema) e, após confirmação, cria ou reordena playlists no Spotify.
+**Arquitetura:** Servidor FastAPI em `127.0.0.1:8000` com interface web em HTML/JS puro. Seis serviços em `services/` (spotify, enrichment, organizer, llm, agent, web) conversam só por contratos pydantic em `contracts/`. O LLM faz o trabalho latente (entender, propor, sugerir músicas); o código faz o determinístico (ordenar, agrupar, casar títulos, chamar APIs).
 
-**Architecture:** Servidor FastAPI em `127.0.0.1:8000` com interface web em HTML/JS puro. Seis serviços em `services/` (spotify, enrichment, organizer, llm, agent, web) conversam só por contratos pydantic em `contracts/`. O LLM faz o trabalho latente (entender, propor, sugerir músicas); o código faz o determinístico (ordenar, agrupar, casar títulos, chamar APIs).
+**Tecnologias:** Python 3.12+ (máquina tem 3.13), uv, FastAPI, uvicorn, httpx, pydantic v2, python-dotenv, sqlite3 (stdlib), pytest, respx. LLM via `claude -p` (Claude Code 2.1.x local).
 
-**Tech Stack:** Python 3.12+ (máquina tem 3.13), uv, FastAPI, uvicorn, httpx, pydantic v2, python-dotenv, sqlite3 (stdlib), pytest, respx. LLM via `claude -p` (Claude Code 2.1.x local).
+**Design:** `docs/design/2026-09-18-playlist-agent.md`
 
-**Spec:** `docs/superpowers/specs/2026-09-18-playlist-agent-design.md`
-
-## Global Constraints
+## Regras que valem para tudo
 
 - Python `>=3.12`; gerenciador `uv`; rodar tudo com `uv run ...`.
 - Servidor sempre em `http://127.0.0.1:8000`; redirect do Spotify `http://127.0.0.1:8000/callback` (nunca `localhost`).
@@ -4686,7 +4684,7 @@ git commit -m "feat(web): interface de chat com prévia, confirmação e desfaze
 
 **Files:**
 - Create: `README.md`, `services/agent/evals/__init__.py`, `services/agent/evals/run_theme.py`
-- Modify: `docs/superpowers/specs/2026-09-18-playlist-agent-design.md` (status e resultados medidos)
+- Modify: `docs/design/2026-09-18-playlist-agent.md` (status e resultados medidos)
 
 **Interfaces:**
 - Consumes: tudo.
@@ -4840,7 +4838,7 @@ Rode `uv run playlist-agent` e faça, anotando o resultado de cada item:
 6. "organiza a Teste Agente por BPM decrescente" → "Substituir a original" → conferir no Spotify → "Desfazer" → a ordem original voltou.
 7. Abra `http://127.0.0.1:8000/api/stats`: `llm_calls`, `avg_bpm_coverage` e `theme_validation_rate` preenchidos.
 
-Qualquer divergência: parar, usar superpowers:systematic-debugging, escrever o teste que reproduz, corrigir.
+Qualquer divergência: parar, investigar a causa raiz, escrever o teste que reproduz o problema e só então corrigir.
 
 - [ ] **Step 5: Evals**
 
@@ -4849,7 +4847,7 @@ Expected: intenção >= 90%, validação de temas >= 70%. Abaixo disso: ajustar 
 
 - [ ] **Step 6: Atualizar a spec com o que foi medido**
 
-Em `docs/superpowers/specs/2026-09-18-playlist-agent-design.md`, trocar a linha de status para `Status: implementado` e adicionar ao final:
+Em `docs/design/2026-09-18-playlist-agent.md`, trocar a linha de status para `Status: implementado` e adicionar ao final:
 
 ```markdown
 ## Resultados medidos (preencher com os números reais)

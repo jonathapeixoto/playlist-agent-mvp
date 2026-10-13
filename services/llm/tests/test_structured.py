@@ -54,3 +54,10 @@ def test_retries_once_with_validation_error_in_prompt():
 def test_gives_up_after_second_invalid_output():
     with pytest.raises(LLMError):
         call_structured(FakeRunner([{"items": "ruim"}, {"items": "ruim"}]), "s", "p", Outer)
+
+
+def test_gives_up_message_names_the_engine_when_given():
+    with pytest.raises(LLMError, match="O motor Google Gemini · flash devolveu resposta inválida"):
+        call_structured(
+            FakeRunner([{"items": "ruim"}, {"items": "ruim"}]), "s", "p", Outer, engine="Google Gemini · flash"
+        )

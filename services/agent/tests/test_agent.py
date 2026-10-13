@@ -97,7 +97,7 @@ def world(tmp_path):
 
     def make(intents=(), theme=None):
         llm = FakeLLM(intents, theme)
-        agent = Agent(llm, spotify, enricher, resolver, UndoStore(tmp_path / "u.sqlite"),
+        agent = Agent(llm, spotify, enricher, resolver, UndoStore(":memory:"),
                       lambda e, **f: events.append((e, f)))
         return agent, llm
 

@@ -1,6 +1,6 @@
 # Spec: Playlist Agent
 
-Data: 2026-09-18 · Status: implementado (verificação real pendente)
+Data: 2026-09-18 · Status: implementado e verificado com a conta real do Jone em 19/09/2026
 
 ## Contexto
 
@@ -31,7 +31,7 @@ services/
   llm/                wrapper de `claude -p --output-format json`, prompts versionados, validação pydantic + 1 retry
   agent/              orquestrador da conversa (máquina de estados)
   web/                FastAPI + estático (chat, prévia, botão confirmar/desfazer)
-docs/superpowers/specs/  spec escrita após aprovação
+docs/design/  spec escrita após aprovação
 ```
 
 Cada serviço tem `README.md`, `tests/` e, quando usa LLM, `evals/`.
@@ -89,10 +89,24 @@ Log JSONL em `data/traces.jsonl` por interação, com:
 - Evals rodados, scores registrados.
 - Teste manual real: login Spotify; reorganizar uma playlist de teste por BPM (checar ordem no app do Spotify); dividir por gênero; criar playlist "prédio" com pelo menos 5 andares validados; reordenar in place e usar Desfazer, conferindo que a ordem original voltou.
 
-## Resultados medidos
+## Resultados medidos (19/09/2026, conta real do Jone)
 
-- Gate tests: 166 testes, 1.34s.
+- Gate tests: 208 testes, 1.87s, saída limpa.
 - Eval de intenção: 100% (25/25, limiar 90%). Relatório: data/evals/intent-20260919-010243.json
-- Eval de temas: pendente (precisa de login no Spotify: `uv run python -m services.agent.evals.run_theme`).
-- Ponta a ponta: pendente (roteiro no plano, Task 16 Step 4).
-- Cobertura média de BPM: pendente (medida no teste ponta a ponta).
+- Eval de temas: 100% das candidatas validadas no Spotify e 39/39 slots preenchidos em 5 temas
+  (prédio, dias da semana, cores, números, estações), limiar 70%. Relatório: data/evals/theme-20260919-215159.json
+- Eval de cobertura de BPM: 86% -> 93% com a busca por versões alternativas, em 5 playlists reais (482 faixas),
+  limiar 85%. Relatório: data/evals/bpm-coverage-20260919-163931.json
+- Ponta a ponta: login, ordenar por BPM, dividir por gênero, playlist de tema, substituir a original e desfazer,
+  todos conferidos no Spotify pelo Jone.
+- Uso real (data/traces.jsonl): 12 chamadas ao Claude Code, 33s de média por chamada, US$ 1,36 no total;
+  cobertura média de BPM 89,5% e de gênero 100% nos planos gerados.
+
+## Limitações conhecidas
+
+- 7% das faixas seguem sem BPM: a ReccoBeats não tem a gravação em nenhuma versão (artistas pequenos,
+  lançamentos recentes). O Spotify tem esse dado no recurso Mixar, mas não o expõe a apps desde nov/2024,
+  e os endpoints internos do aplicativo estão fora de cogitação (violam os termos de desenvolvedor).
+- A busca por versões alternativas olha só a primeira página de resultados do Spotify (10 itens).
+- Se o login do Spotify expirar no meio de uma gravação, o app pede login de novo e uma nova tentativa
+  pode criar uma playlist duplicada.
